@@ -7,7 +7,21 @@
 		{
 			"Name": "FiubaDefense",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"DeveloperSettings"
+			]
+		},
+		{
+			"Name": "FiubaDefenseEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject",
+				"DeveloperSettings"
+			]
 		}
 	],
 	"Plugins": [
