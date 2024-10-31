@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "FDTower.generated.h"
 
+class UCapsuleComponent;
+
 UCLASS()
 class FIUBADEFENSE_API AFDTower : public AActor
 {
@@ -15,12 +17,11 @@ public:
 	// Sets default values for this actor's properties
 	AFDTower();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	FVector GetFeetLocationOffset() const;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+protected:
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UCapsuleComponent> CapsuleComponent;
 
 };

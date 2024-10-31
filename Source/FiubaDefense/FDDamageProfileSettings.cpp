@@ -8,7 +8,7 @@ const UFDDamageProfileSettings* UFDDamageProfileSettings::Get()
 	return GetDefault<UFDDamageProfileSettings>();
 }
 
-float UFDDamageProfileSettings::GetDamageMultiplierBetween(EFDTowerDamageType DamageType, EFDMonsterArmorType MonsterArmorTypes) const
+float UFDDamageProfileSettings::GetDamageMultiplierBetween(EFDWeaponDamageType DamageType, EFDMonsterArmorType MonsterArmorTypes) const
 {
 	const int32 DamageArmorHash = GetDamageArmorHash(DamageType, MonsterArmorTypes);
 	const float* Multiplier = DamageMultiplierMap.Find(DamageArmorHash);
@@ -19,7 +19,7 @@ float UFDDamageProfileSettings::GetDamageMultiplierBetween(EFDTowerDamageType Da
 	return *Multiplier;
 }
 
-int32 UFDDamageProfileSettings::GetDamageArmorHash(EFDTowerDamageType DamageType, EFDMonsterArmorType ArmorType) const
+int32 UFDDamageProfileSettings::GetDamageArmorHash(EFDWeaponDamageType DamageType, EFDMonsterArmorType ArmorType) const
 {
 	const int32 DamageTypeHash = static_cast<uint32>(DamageType);
 	const int32 ArmorTypeHash = static_cast<uint32>(ArmorType) << 16;	
@@ -28,7 +28,7 @@ int32 UFDDamageProfileSettings::GetDamageArmorHash(EFDTowerDamageType DamageType
 }
 
 #if WITH_EDITOR
-void UFDDamageProfileSettings::SetDamageMultiplierBetween(EFDTowerDamageType DamageType, EFDMonsterArmorType ArmorType, float NewDamageValue)
+void UFDDamageProfileSettings::SetDamageMultiplierBetween(EFDWeaponDamageType DamageType, EFDMonsterArmorType ArmorType, float NewDamageValue)
 {
 	const int32 DamageArmorHash = GetDamageArmorHash(DamageType, ArmorType);
 

@@ -23,17 +23,17 @@ public:
 	TMap<EFDMonsterArmorType, FText> ArmorTypesDisplayName;
 
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly)
-	TMap<EFDTowerDamageType, FText> DamageTypesDisplayName;
+	TMap<EFDWeaponDamageType, FText> DamageTypesDisplayName;
 
-	float GetDamageMultiplierBetween(EFDTowerDamageType DamageType, EFDMonsterArmorType ArmorType) const;
+	float GetDamageMultiplierBetween(EFDWeaponDamageType DamageType, EFDMonsterArmorType ArmorType) const;
 
 #if WITH_EDITOR
-	void SetDamageMultiplierBetween(EFDTowerDamageType DamageType, EFDMonsterArmorType ArmorType, float NewDamageValue);
+	void SetDamageMultiplierBetween(EFDWeaponDamageType DamageType, EFDMonsterArmorType ArmorType, float NewDamageValue);
 #endif
 
 protected:
 
-	int32 GetDamageArmorHash(EFDTowerDamageType DamageType, EFDMonsterArmorType ArmorType) const;
+	int32 GetDamageArmorHash(EFDWeaponDamageType DamageType, EFDMonsterArmorType ArmorType) const;
 	
 	UPROPERTY(Config)
 	TMap<int32, float> DamageMultiplierMap;

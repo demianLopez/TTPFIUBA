@@ -15,7 +15,7 @@ enum class EFDMonsterArmorType : uint8
 };
 
 UENUM(BlueprintType)
-enum class EFDTowerDamageType : uint8
+enum class EFDWeaponDamageType : uint8
 {
 	Normal,
 	Pierce ,

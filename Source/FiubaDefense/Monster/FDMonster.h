@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "FDMonster.generated.h"
 
 UCLASS()
-class FIUBADEFENSE_API AFDMonster : public AActor
+class FIUBADEFENSE_API AFDMonster : public APawn
 {
 	GENERATED_BODY()
 	
@@ -15,12 +15,6 @@ public:
 	// Sets default values for this actor's properties
 	AFDMonster();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 };

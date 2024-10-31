@@ -17,13 +17,13 @@ public:
 
 protected:
 
-	TArray<EFDTowerDamageType> BuildTowerDamages() const;
+	TArray<EFDWeaponDamageType> BuildTowerDamages() const;
 	TArray<EFDMonsterArmorType> BuildMonsterArmors() const;
 
-	FText GetDamageTypeDisplayName(EFDTowerDamageType DamageType) const;
+	FText GetDamageTypeDisplayName(EFDWeaponDamageType DamageType) const;
 	FText GetArmorTypeDisplayName(EFDMonsterArmorType ArmorType) const;
 
-	void OnValueCommitted(float Value, ETextCommit::Type, EFDMonsterArmorType ArmorType, EFDTowerDamageType DamageType);
+	void OnValueCommitted(float Value, ETextCommit::Type, EFDMonsterArmorType ArmorType, EFDWeaponDamageType DamageType);
 
 	UFDDamageProfileSettings* GetProfile() const;
 };

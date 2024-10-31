@@ -31,11 +31,11 @@ void FFDDamageProfileDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuild
 
 	];
 
-	TArray<EFDTowerDamageType> DamageTypes = BuildTowerDamages();
+	TArray<EFDWeaponDamageType> DamageTypes = BuildTowerDamages();
 	TArray<EFDMonsterArmorType> ArmorTypes = BuildMonsterArmors();
 
 	int32 DamageTypeIndex = 1;
-	for(EFDTowerDamageType DamageType : DamageTypes)
+	for(EFDWeaponDamageType DamageType : DamageTypes)
 	{
 		UniformGridPanel->AddSlot(0, DamageTypeIndex)
 		[
@@ -57,7 +57,7 @@ void FFDDamageProfileDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuild
 
 	UFDDamageProfileSettings* DamageProfile = GetProfile();
 	DamageTypeIndex = 1;
-	for(EFDTowerDamageType DamageType : DamageTypes)
+	for(EFDWeaponDamageType DamageType : DamageTypes)
 	{
 		ArmorTypeIndex = 1;
 		for(EFDMonsterArmorType ArmorType : ArmorTypes)
@@ -84,22 +84,22 @@ void FFDDamageProfileDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuild
 	}
 }
 
-void FFDDamageProfileDetails::OnValueCommitted(float Value, ETextCommit::Type, EFDMonsterArmorType ArmorType, EFDTowerDamageType DamageType)
+void FFDDamageProfileDetails::OnValueCommitted(float Value, ETextCommit::Type, EFDMonsterArmorType ArmorType, EFDWeaponDamageType DamageType)
 {
 	UFDDamageProfileSettings* DamageProfile = GetProfile();
 	DamageProfile->SetDamageMultiplierBetween(DamageType, ArmorType, Value);
 	DamageProfile->TryUpdateDefaultConfigFile();
 }
 
-TArray<EFDTowerDamageType> FFDDamageProfileDetails::BuildTowerDamages() const
+TArray<EFDWeaponDamageType> FFDDamageProfileDetails::BuildTowerDamages() const
 {
-	TArray<EFDTowerDamageType> DamageTypes;
+	TArray<EFDWeaponDamageType> DamageTypes;
 	
 	//		const UEnum* EnumPtr = FindObject<UEnum>(nullptr, TEXT("/Script/SourceFilteringCore.EFilterSetMode"), true);
-	const UEnum* TowerDamageTypesEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("EFDTowerDamageType"));
+	const UEnum* TowerDamageTypesEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("EFDWeaponDamageType"));
 	for(int32 idx = 0; idx < TowerDamageTypesEnum->NumEnums() - 1; ++idx)
 	{
-		EFDTowerDamageType ArmorType = static_cast<EFDTowerDamageType>(TowerDamageTypesEnum->GetValueByIndex(idx));
+		EFDWeaponDamageType ArmorType = static_cast<EFDWeaponDamageType>(TowerDamageTypesEnum->GetValueByIndex(idx));
 		DamageTypes.Add(ArmorType);		
 	}
 
@@ -120,7 +120,7 @@ TArray<EFDMonsterArmorType> FFDDamageProfileDetails::BuildMonsterArmors() const
 	return ArmorTypes;
 }
 
-FText FFDDamageProfileDetails::GetDamageTypeDisplayName(EFDTowerDamageType DamageType) const
+FText FFDDamageProfileDetails::GetDamageTypeDisplayName(EFDWeaponDamageType DamageType) const
 {
 	UFDDamageProfileSettings* DamageProfile = GetProfile();
 
@@ -128,7 +128,7 @@ FText FFDDamageProfileDetails::GetDamageTypeDisplayName(EFDTowerDamageType Damag
 	if(CustomDisplayName != nullptr)
 		return *CustomDisplayName;
 	
-	const UEnum* TowerDamageTypesEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("EFDTowerDamageType"));
+	const UEnum* TowerDamageTypesEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("EFDWeaponDamageType"));
 	return TowerDamageTypesEnum->GetDisplayNameTextByValue(static_cast<int64>(DamageType));
 }
 
