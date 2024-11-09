@@ -18,7 +18,7 @@ class FIUBADEFENSE_API UFDMonsterDataAsset : public UPrimaryDataAsset
 
 public:
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, meta = (AssetBundles="Game"))
 	TSoftClassPtr<AFDMonster> MonsterToSpawnClass;
 
 	UPROPERTY(EditDefaultsOnly)

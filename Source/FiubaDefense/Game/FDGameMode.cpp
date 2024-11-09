@@ -5,6 +5,7 @@
 
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/PlayerStart.h"
+#include "Monster/FDEnemySpawnerSubsystem.h"
 #include "Player/FDPlayerPawn.h"
 #include "Tower/FDTower.h"
 
@@ -35,4 +36,26 @@ void AFDGameMode::SetPlayerDefaults(APawn* PlayerPawn)
 	
 	AFDTower* PlayerTower = GetWorld()->SpawnActor<AFDTower>(PlayerTowerClass, TowerSpawnLocation, TowerSpawnRotation, SpawnParameters);
 	FDPlayerPawn->SetTowerReference(PlayerTower);
+}
+
+void AFDGameMode::StartPlay()
+{
+	Super::StartPlay();
+	
+	FTimerHandle TempTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TempTimerHandle, this, &ThisClass::StartMatch, 5.0f);
+}
+
+float AFDGameMode::GetMatchElapsedTime() const
+{
+	const float CurrentTimeSeconds = GetWorld()->GetTimeSeconds();
+	return CurrentTimeSeconds - MatchStartedTime;
+}
+
+void AFDGameMode::StartMatch()
+{
+	MatchStartedTime = GetWorld()->GetTimeSeconds();
+	
+	UFDEnemySpawnerSubsystem* SpawnerSubsystem = UFDEnemySpawnerSubsystem::Get(this);
+	SpawnerSubsystem->StartSpawning();
 }

@@ -20,7 +20,14 @@ class FIUBADEFENSE_API AFDGameMode : public AGameModeBase
 public:
 	virtual void SetPlayerDefaults(APawn* PlayerPawn) override;
 
+	virtual void StartPlay() override;
+
+	float GetMatchElapsedTime() const;
 protected:
+	
+	void StartMatch();
+
+	float MatchStartedTime;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AFDTower> PlayerTowerClass;
