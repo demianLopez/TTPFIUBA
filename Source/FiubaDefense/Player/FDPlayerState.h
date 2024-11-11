@@ -13,5 +13,16 @@ UCLASS()
 class FIUBADEFENSE_API AFDPlayerState : public APlayerState
 {
 	GENERATED_BODY()
+public:
+
+	void IncrementIncome();
+
+	FORCEINLINE float GetGold() const { return Gold; }
+	FORCEINLINE int32 GetEnemiesKilled() const { return EnemiesKilled; }
+	
+protected:
+
+	float Gold = 0.0f;
+	int32 EnemiesKilled = 0;
 	
 };

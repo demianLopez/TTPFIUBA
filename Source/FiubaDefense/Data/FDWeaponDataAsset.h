@@ -7,6 +7,7 @@
 #include "Engine/DataAsset.h"
 #include "FDWeaponDataAsset.generated.h"
 
+class AFDWeaponBase;
 /**
  * 
  */
@@ -22,4 +23,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	EFDWeaponDamageType DamageType;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AFDWeaponBase> WeaponClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	float BaseFireRate = 1.0f;
 };

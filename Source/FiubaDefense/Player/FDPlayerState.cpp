@@ -3,3 +3,7 @@
 
 #include "Player/FDPlayerState.h"
 
+void AFDPlayerState::IncrementIncome()
+{
+	Gold += 50.0f;
+}

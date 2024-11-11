@@ -3,11 +3,21 @@
 
 #include "Game/FDGameMode.h"
 
+#include "FDFunctionLibrary.h"
 #include "Components/CapsuleComponent.h"
+#include "Data/FDWeaponDataAsset.h"
+#include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerStart.h"
 #include "Monster/FDEnemySpawnerSubsystem.h"
 #include "Player/FDPlayerPawn.h"
+#include "Player/FDPlayerState.h"
 #include "Tower/FDTower.h"
+#include "Weapons/FDWeaponBase.h"
+
+AFDGameMode::AFDGameMode()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
 
 void AFDGameMode::SetPlayerDefaults(APawn* PlayerPawn)
 {
@@ -38,6 +48,34 @@ void AFDGameMode::SetPlayerDefaults(APawn* PlayerPawn)
 	FDPlayerPawn->SetTowerReference(PlayerTower);
 }
 
+void AFDGameMode::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if(bMatchStarted)
+	{
+		const float CurrentTimeStamp = GetWorld()->GetTimeSeconds();
+		const float ElapsedTime = CurrentTimeStamp - LastGoldTickTimeStamp;
+
+		if(ElapsedTime >= GoldTickTime)
+		{
+			TickGold();
+			LastGoldTickTimeStamp = CurrentTimeStamp;
+		}	
+	}
+}
+
+void AFDGameMode::TickGold()
+{
+	AGameStateBase* GameStateBase = GetGameState<AGameStateBase>();
+
+	for(APlayerState* PlayerState : GameStateBase->PlayerArray)
+	{
+		AFDPlayerState* FDPlayerState = Cast<AFDPlayerState>(PlayerState);
+		FDPlayerState->IncrementIncome();
+	}
+}
+
 void AFDGameMode::StartPlay()
 {
 	Super::StartPlay();
@@ -55,7 +93,29 @@ float AFDGameMode::GetMatchElapsedTime() const
 void AFDGameMode::StartMatch()
 {
 	MatchStartedTime = GetWorld()->GetTimeSeconds();
+	LastGoldTickTimeStamp = MatchStartedTime;
+	bMatchStarted = true;
 	
 	UFDEnemySpawnerSubsystem* SpawnerSubsystem = UFDEnemySpawnerSubsystem::Get(this);
 	SpawnerSubsystem->StartSpawning();
+}
+
+AFDWeaponBase* AFDGameMode::CreateWeaponForPlayer(const APlayerController* PlayerController,
+	const UFDWeaponDataAsset* WeaponDataAsset)
+{
+	AFDTower* PlayerTower = UFDFunctionLibrary::GetPlayerTower(PlayerController);
+
+	if(!IsValid(PlayerTower))
+		return nullptr;
+
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = PlayerTower;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
+	AFDWeaponBase* NewWeapon = GetWorld()->SpawnActor<AFDWeaponBase>(WeaponDataAsset->WeaponClass
+		, PlayerTower->GetActorLocation(), PlayerTower->GetActorRotation(), SpawnParameters);
+
+	NewWeapon->InitWithData(WeaponDataAsset);
+
+	return NewWeapon;
 }

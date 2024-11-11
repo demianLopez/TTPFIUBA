@@ -21,7 +21,7 @@ public:
 	AFDPlayerPawn();
 
 	void SetTowerReference(AFDTower* Tower);
-
+	FORCEINLINE AFDTower* GetTowerReference() const { return TowerReference; }
 protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
