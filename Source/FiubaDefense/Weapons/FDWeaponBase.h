@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "FDWeaponBase.generated.h"
 
+class AFDTower;
 class UFDWeaponDataAsset;
 class AFDBaseProjectile;
 
@@ -19,6 +20,10 @@ public:
 	AFDWeaponBase();
 
 	virtual void InitWithData(const UFDWeaponDataAsset* InWeaponDataAsset);
+
+	virtual void Tick(float DeltaSeconds) override;
+
+	AFDTower* GetOwningTower() const;
 protected:
 
 	UPROPERTY(Transient)
@@ -28,4 +33,11 @@ protected:
 	TSubclassOf<AFDBaseProjectile> ProjectileToSpawn;
 
 	float FireRate = 1.0f;
+	float LastFireTimestamp = 0.0f;
+
+	UPROPERTY(Transient)
+	TObjectPtr<AActor> Target;
+
+	void FindTarget();
+	void FireProjectile();
 };

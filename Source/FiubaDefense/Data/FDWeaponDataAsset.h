@@ -24,8 +24,8 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	EFDWeaponDamageType DamageType;
 
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<AFDWeaponBase> WeaponClass;
+	UPROPERTY(EditDefaultsOnly, meta = (AssetBundles="Game"))
+	TSoftClassPtr<AFDWeaponBase> WeaponClass;
 
 	UPROPERTY(EditDefaultsOnly)
 	float BaseFireRate = 1.0f;

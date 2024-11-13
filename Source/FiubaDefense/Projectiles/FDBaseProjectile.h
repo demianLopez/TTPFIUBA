@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "FDBaseProjectile.generated.h"
 
+class UProjectileMovementComponent;
+
 UCLASS()
 class FIUBADEFENSE_API AFDBaseProjectile : public AActor
 {
@@ -15,12 +17,18 @@ public:
 	// Sets default values for this actor's properties
 	AFDBaseProjectile();
 
+	void GoToTarget(AActor* Target);
+	virtual void Tick(float DeltaSeconds) override;
+
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	UPROPERTY(Transient)
+	TObjectPtr<AActor> Target;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	UPROPERTY(EditDefaultsOnly)
+	float ImpactDistance = 100.0f;
+	
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent;
 
+	virtual void OnImpact();
 };

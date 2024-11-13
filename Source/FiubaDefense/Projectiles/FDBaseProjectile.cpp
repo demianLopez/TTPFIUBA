@@ -3,25 +3,48 @@
 
 #include "Projectiles/FDBaseProjectile.h"
 
+#include "GameFramework/ProjectileMovementComponent.h"
+
 // Sets default values
 AFDBaseProjectile::AFDBaseProjectile()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	PrimaryActorTick.bCanEverTick = true;
-
+	PrimaryActorTick.TickInterval = 0.2;
 }
 
-// Called when the game starts or when spawned
-void AFDBaseProjectile::BeginPlay()
+void AFDBaseProjectile::GoToTarget(AActor* InTarget)
 {
-	Super::BeginPlay();
+	ProjectileMovementComponent->bIsHomingProjectile = true;
+	ProjectileMovementComponent->HomingTargetComponent = InTarget->GetRootComponent();
+
+	Target = InTarget;
+}
+
+
+void AFDBaseProjectile::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	float ImpactDistanceSQRT = FMath::Square(ImpactDistance);
 	
+	if(IsValid(Target))
+	{
+		float DistSQRToTarget = GetSquaredDistanceTo(Target);
+
+		if(DistSQRToTarget < ImpactDistanceSQRT)
+		{
+			OnImpact();
+		}
+	}
+	else
+	{
+		Destroy();
+	}
 }
 
-// Called every frame
-void AFDBaseProjectile::Tick(float DeltaTime)
+void AFDBaseProjectile::OnImpact()
 {
-	Super::Tick(DeltaTime);
-
+	Destroy();
 }
 

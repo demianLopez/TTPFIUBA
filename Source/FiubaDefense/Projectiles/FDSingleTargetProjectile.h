@@ -13,5 +13,7 @@ UCLASS()
 class FIUBADEFENSE_API AFDSingleTargetProjectile : public AFDBaseProjectile
 {
 	GENERATED_BODY()
-	
+
+protected:
+	virtual void OnImpact() override;
 };

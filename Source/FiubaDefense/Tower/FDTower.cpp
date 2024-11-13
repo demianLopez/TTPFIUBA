@@ -17,3 +17,11 @@ FVector AFDTower::GetFeetLocationOffset() const
 	const float CapsuleHalfHeight = CapsuleComponent->GetScaledCapsuleHalfHeight();
 	return FVector(0.0f, 0.0f, CapsuleHalfHeight);
 }
+
+void AFDTower::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	MaxHealth = InitialHealth;
+	CurrentHealth = MaxHealth;
+}

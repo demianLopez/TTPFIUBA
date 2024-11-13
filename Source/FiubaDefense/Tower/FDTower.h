@@ -19,9 +19,18 @@ public:
 
 	FVector GetFeetLocationOffset() const;
 
-protected:
+	virtual void PostInitializeComponents() override;
 
+	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
+
+protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
 
+	UPROPERTY(EditDefaultsOnly)
+	float InitialHealth = 100.0f;
+
+	float CurrentHealth;
+	float MaxHealth;
 };

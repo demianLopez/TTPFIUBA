@@ -94,8 +94,6 @@ void UFDEnemySpawnerSubsystem::OnMonsterLoadedComplete()
 	}
 }
 
-
-
 void UFDEnemySpawnerSubsystem::Tick(float DeltaTime)
 {
 	if(!bActive)

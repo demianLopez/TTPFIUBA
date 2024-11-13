@@ -46,4 +46,13 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AFDTower> PlayerTowerClass;
+
+	FTimerHandle ShopTimerHandle;
+	void OnRefreshShopTimer();
+
+	UPROPERTY(EditDefaultsOnly)
+	float ShopRefreshTime = 30.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UFDWeaponDataAsset> TestWeaponData;
 };

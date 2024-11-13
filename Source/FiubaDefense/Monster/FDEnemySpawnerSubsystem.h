@@ -29,7 +29,8 @@ public:
 	void StopSpawning();
 
 	virtual void Tick(float DeltaTime) override;
-
+	
+	FORCEINLINE const TArray<AFDMonster*>& GetSpawnedMosnsters() const { return SpawnedMonsters; }
 protected:
 	virtual bool DoesSupportWorldType(const EWorldType::Type WorldType) const override;
 	float GetLastSpawnedTimeElapsed() const;
@@ -47,7 +48,7 @@ protected:
 	TArray<TObjectPtr<const UFDMonsterDataAsset>> MonsterDataAssets;
 
 	UPROPERTY(Transient)
-	TSet<AFDMonster*> SpawnedMonsters;
+	TArray<AFDMonster*> SpawnedMonsters;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AFDGameMode> FDGameMode;

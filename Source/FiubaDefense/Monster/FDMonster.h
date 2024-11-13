@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "FDMonster.generated.h"
 
+class USphereComponent;
 class UFloatingPawnMovement;
 
 UCLASS()
@@ -18,9 +19,14 @@ public:
 	AFDMonster();
 
 	virtual void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
+	virtual float TakeDamage(float Damage, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UFloatingPawnMovement> FloatingPawnMovement;
 
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USphereComponent> SphereComponent;
+
+	float Health = 2.0f;
 };

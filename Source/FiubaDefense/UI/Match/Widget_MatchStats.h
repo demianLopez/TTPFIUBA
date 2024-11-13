@@ -6,6 +6,7 @@
 #include "CommonUserWidget.h"
 #include "Widget_MatchStats.generated.h"
 
+class UProgressBar;
 class UTextBlock;
 
 /**
@@ -27,4 +28,7 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TextBlock_KilledEnemies;
+
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* ProgressBar_HealthBar;
 };

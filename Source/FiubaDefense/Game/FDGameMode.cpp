@@ -4,11 +4,13 @@
 #include "Game/FDGameMode.h"
 
 #include "FDFunctionLibrary.h"
+#include "FDShopComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Data/FDWeaponDataAsset.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerStart.h"
 #include "Monster/FDEnemySpawnerSubsystem.h"
+#include "Player/FDPlayerController.h"
 #include "Player/FDPlayerPawn.h"
 #include "Player/FDPlayerState.h"
 #include "Tower/FDTower.h"
@@ -98,6 +100,14 @@ void AFDGameMode::StartMatch()
 	
 	UFDEnemySpawnerSubsystem* SpawnerSubsystem = UFDEnemySpawnerSubsystem::Get(this);
 	SpawnerSubsystem->StartSpawning();
+
+	GetWorld()->GetTimerManager().SetTimer(ShopTimerHandle, this, &ThisClass::OnRefreshShopTimer, ShopRefreshTime, true);
+	OnRefreshShopTimer();
+
+	if(IsValid(TestWeaponData))
+	{
+		CreateWeaponForPlayer(GetWorld()->GetFirstPlayerController(), TestWeaponData);
+	}
 }
 
 AFDWeaponBase* AFDGameMode::CreateWeaponForPlayer(const APlayerController* PlayerController,
@@ -112,10 +122,19 @@ AFDWeaponBase* AFDGameMode::CreateWeaponForPlayer(const APlayerController* Playe
 	SpawnParameters.Owner = PlayerTower;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	
-	AFDWeaponBase* NewWeapon = GetWorld()->SpawnActor<AFDWeaponBase>(WeaponDataAsset->WeaponClass
+	AFDWeaponBase* NewWeapon = GetWorld()->SpawnActor<AFDWeaponBase>(WeaponDataAsset->WeaponClass.LoadSynchronous()
 		, PlayerTower->GetActorLocation(), PlayerTower->GetActorRotation(), SpawnParameters);
 
 	NewWeapon->InitWithData(WeaponDataAsset);
 
 	return NewWeapon;
+}
+
+void AFDGameMode::OnRefreshShopTimer()
+{
+	for(FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator() ; It; ++It)
+	{
+		AFDPlayerController* FDPlayerController = Cast<AFDPlayerController>(It->Get());
+		FDPlayerController->GetShopComponent()->RefreshShop();
+	}
 }
