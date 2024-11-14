@@ -39,7 +39,8 @@ void AFDGameMode::SetPlayerDefaults(APawn* PlayerPawn)
 	
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
+	SpawnParameters.Owner = PlayerPawn->GetController();
+	
 	const AFDTower* DefaultTowerObject = GetDefault<AFDTower>(PlayerTowerClass);
 	FeetOffset += DefaultTowerObject->GetFeetLocationOffset();
 
@@ -103,11 +104,6 @@ void AFDGameMode::StartMatch()
 
 	GetWorld()->GetTimerManager().SetTimer(ShopTimerHandle, this, &ThisClass::OnRefreshShopTimer, ShopRefreshTime, true);
 	OnRefreshShopTimer();
-
-	if(IsValid(TestWeaponData))
-	{
-		CreateWeaponForPlayer(GetWorld()->GetFirstPlayerController(), TestWeaponData);
-	}
 }
 
 AFDWeaponBase* AFDGameMode::CreateWeaponForPlayer(const APlayerController* PlayerController,

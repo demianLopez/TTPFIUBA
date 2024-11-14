@@ -18,7 +18,6 @@ UWidget_FDActivatable* UWidget_HUD::PushWidget(TSubclassOf<UWidget_FDActivatable
 		return LayerContainer->AddWidget<UWidget_FDActivatable>(WidgetClass, [this, &InstanceInitFunc](UWidget_FDActivatable& Widget)
 		{
 			InstanceInitFunc(&Widget);
-			Widget.OwningHUD = this;
 		});
 	}
 

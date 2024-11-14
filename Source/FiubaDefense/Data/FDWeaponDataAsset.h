@@ -18,8 +18,17 @@ class FIUBADEFENSE_API UFDWeaponDataAsset : public UPrimaryDataAsset
 
 public:
 
+	UPROPERTY(EditDefaultsOnly, meta = (AssetBundles="Game"))
+	TSoftObjectPtr<UTexture2D> Icon;
+
 	UPROPERTY(EditDefaultsOnly)
-	TSoftObjectPtr<UTexture> Icon;
+	FText WeaponName;
+
+	UPROPERTY(EditDefaultsOnly)
+	FText WeaponDescription;
+
+	UPROPERTY(EditDefaultsOnly)
+	float BasePrice = 1000.0f;
 
 	UPROPERTY(EditDefaultsOnly)
 	EFDWeaponDamageType DamageType;

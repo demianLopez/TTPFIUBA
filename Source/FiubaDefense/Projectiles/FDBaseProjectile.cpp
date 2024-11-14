@@ -4,6 +4,8 @@
 #include "Projectiles/FDBaseProjectile.h"
 
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Tower/FDTower.h"
+#include "Weapons/FDWeaponBase.h"
 
 // Sets default values
 AFDBaseProjectile::AFDBaseProjectile()
@@ -19,22 +21,39 @@ void AFDBaseProjectile::GoToTarget(AActor* InTarget)
 	ProjectileMovementComponent->HomingTargetComponent = InTarget->GetRootComponent();
 
 	Target = InTarget;
+	LastDistanceSQRT = GetSquaredDistanceTo(Target);
 }
 
+AFDPlayerController* AFDBaseProjectile::GetInstigatorController() const
+{
+	AFDWeaponBase* OwningWeapon = GetOwner<AFDWeaponBase>();
+
+	if(!IsValid(OwningWeapon))
+		return nullptr;
+
+	AFDTower* Tower = OwningWeapon->GetOwningTower();
+
+	if(!IsValid(Tower))
+		return nullptr;
+
+	return Tower->GetOwningPlayer();
+}
 
 void AFDBaseProjectile::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	float ImpactDistanceSQRT = FMath::Square(ImpactDistance);
-	
+		
 	if(IsValid(Target))
 	{
 		float DistSQRToTarget = GetSquaredDistanceTo(Target);
 
-		if(DistSQRToTarget < ImpactDistanceSQRT)
+		if(LastDistanceSQRT < DistSQRToTarget)
 		{
 			OnImpact();
+		}
+		else
+		{
+			LastDistanceSQRT = GetSquaredDistanceTo(Target);
 		}
 	}
 	else

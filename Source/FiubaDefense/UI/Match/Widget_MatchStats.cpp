@@ -5,6 +5,7 @@
 
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Game/FDGameMode.h"
 #include "GameFramework/GameStateBase.h"
 #include "Player/FDPlayerPawn.h"
 #include "Player/FDPlayerState.h"
@@ -40,5 +41,19 @@ void UWidget_MatchStats::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 			TextBlock_PlayerHealth->SetText(FText::AsNumber(CurrentHealth, &FormattingOptions));
 		}
 	}
-	
+
+	AFDGameMode* GameMode = GetWorld()->GetAuthGameMode<AFDGameMode>();
+	if(IsValid(GameMode))
+	{
+		const float MatchElapsedTime = GameMode->GetMatchElapsedTime();
+
+		const float Mins = FMath::RoundToZero(MatchElapsedTime/60.0f);
+		const float Seconds = MatchElapsedTime - Mins * 60.0f;
+
+		FormattingOptions.MinimumIntegralDigits = 2;
+		FormattingOptions.MaximumIntegralDigits = 2;
+		
+		TextBlock_MatchSecsElapsed->SetText(FText::AsNumber(Seconds, &FormattingOptions));
+		TextBlock_MatchMinsElapsed->SetText(FText::AsNumber(Mins, &FormattingOptions));
+	}	
 }

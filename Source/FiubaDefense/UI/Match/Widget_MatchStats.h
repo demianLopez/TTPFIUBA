@@ -21,14 +21,20 @@ protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* TextBlock_PlayerGold;
+	TObjectPtr<UTextBlock> TextBlock_PlayerGold;
 
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* TextBlock_PlayerHealth;
+	TObjectPtr<UTextBlock> TextBlock_PlayerHealth;
 
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* TextBlock_KilledEnemies;
+	TObjectPtr<UTextBlock> TextBlock_KilledEnemies;
 
 	UPROPERTY(meta = (BindWidget))
-	UProgressBar* ProgressBar_HealthBar;
+	TObjectPtr<UTextBlock> TextBlock_MatchMinsElapsed;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> TextBlock_MatchSecsElapsed;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UProgressBar> ProgressBar_HealthBar;
 };

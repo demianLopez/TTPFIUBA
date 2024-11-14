@@ -52,7 +52,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	float ShopRefreshTime = 30.0f;
-
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UFDWeaponDataAsset> TestWeaponData;
 };

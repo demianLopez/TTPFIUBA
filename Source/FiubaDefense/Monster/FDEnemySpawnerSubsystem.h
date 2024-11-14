@@ -36,6 +36,8 @@ protected:
 	float GetLastSpawnedTimeElapsed() const;
 	void UpdateSpawnTimeStamp();
 
+	int32 GetTotalMonsterKilled() const;
+
 	void SetUpMonsterStats(AFDMonster* Monster);
 
 	void SpawnEnemy();

@@ -4,6 +4,7 @@
 #include "Projectiles/FDSingleTargetProjectile.h"
 
 #include "Engine/DamageEvents.h"
+#include "Player/FDPlayerController.h"
 
 void AFDSingleTargetProjectile::OnImpact()
 {
@@ -12,7 +13,7 @@ void AFDSingleTargetProjectile::OnImpact()
 		FPointDamageEvent PointDamageEvent;
 		PointDamageEvent.Damage = 1.0f;
 		
-		Target->TakeDamage(1.0f, PointDamageEvent, nullptr, this);
+		Target->TakeDamage(1.0f, PointDamageEvent, GetInstigatorController(), this);
 	}
 	
 	Super::OnImpact();

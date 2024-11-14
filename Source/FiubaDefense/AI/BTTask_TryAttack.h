@@ -3,19 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
-#include "BTTask_FindNearestTower.generated.h"
+#include "BehaviorTree/BTTaskNode.h"
+#include "BTTask_TryAttack.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class FIUBADEFENSE_API UBTTask_FindNearestTower : public UBTTask_BlackboardBase
+class FIUBADEFENSE_API UBTTask_TryAttack : public UBTTaskNode
 {
 	GENERATED_BODY()
 
 public:
-	UBTTask_FindNearestTower();
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
-	
 };

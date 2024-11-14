@@ -3,8 +3,16 @@
 
 #include "Game/FDShopComponent.h"
 
+#include "FDGameMode.h"
 #include "Data/FDWeaponDataAsset.h"
 #include "Engine/AssetManager.h"
+#include "Player/FDPlayerController.h"
+#include "Player/FDPlayerState.h"
+
+FDShopItem::FDShopItem(int32 Index) : bAvailable(false), Index(Index)
+{
+
+}
 
 // Sets default values for this component's properties
 UFDShopComponent::UFDShopComponent()
@@ -15,6 +23,13 @@ UFDShopComponent::UFDShopComponent()
 void UFDShopComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SellingItems.Reserve(ShopItemsPerRefresh);
+	for(int ItemIndex = 0; ItemIndex < ShopItemsPerRefresh; ItemIndex++)
+	{
+		TSharedPtr<FDShopItem> ShopItem = MakeShareable(new FDShopItem(ItemIndex));
+		SellingItems.Add(ShopItem);
+	}
 
 	UAssetManager& AssetManager = UAssetManager::Get();
 
@@ -56,14 +71,40 @@ void UFDShopComponent::OnWeaponLoadedComplete()
 }
 
 void UFDShopComponent::RefreshShop()
-{
-	StoreAssets.Reset();
-	
+{	
 	for(int32 i = 0; i < ShopItemsPerRefresh; i++)
 	{
+		TSharedPtr<FDShopItem> Item = SellingItems[i];
+
+		Item->bAvailable = true;
+		
 		const int32 RandomUpdateIndex = FMath::RandRange(1, WeaponDataAssets.Num()) - 1;
-		StoreAssets.Add(WeaponDataAssets[RandomUpdateIndex]);
+		Item->WeaponData = WeaponDataAssets[RandomUpdateIndex];
 	}
 
 	OnShopRefreshed.Broadcast();
+}
+
+bool UFDShopComponent::TryBuyItem(TSharedPtr<FDShopItem> ShopItem)
+{
+	if(!ShopItem->bAvailable)
+		return false;
+	
+	const UFDWeaponDataAsset* ItemWeaponData = ShopItem->WeaponData.Get();
+
+	AFDPlayerController* OwningFDPlayerController = GetOwner<AFDPlayerController>();
+	AFDPlayerState* OwningPlayerState = OwningFDPlayerController->GetPlayerState<AFDPlayerState>();
+
+	if(OwningPlayerState->GetGold() < ItemWeaponData->BasePrice)
+		return false;
+
+	OwningPlayerState->SubstractGold(ItemWeaponData->BasePrice);
+	ShopItem->bAvailable = false;
+
+	AFDGameMode* FDGameMode = GetWorld()->GetAuthGameMode<AFDGameMode>();
+	FDGameMode->CreateWeaponForPlayer(OwningFDPlayerController, ItemWeaponData);
+
+	OnShopRefreshed.Broadcast();
+
+	return true;
 }

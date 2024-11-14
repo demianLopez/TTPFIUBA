@@ -25,7 +25,7 @@ public:
 	float K2 = 0.01f;
 
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category="Spawn")
-	float K3 = 0.05f;
+	float K3 = 0.01f;
 
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category="Spawn")
 	float SpawnMinDistance = 1000.0f;

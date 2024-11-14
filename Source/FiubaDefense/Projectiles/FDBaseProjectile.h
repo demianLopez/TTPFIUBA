@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "FDBaseProjectile.generated.h"
 
+class AFDPlayerController;
 class UProjectileMovementComponent;
 
 UCLASS()
@@ -23,12 +24,13 @@ public:
 protected:
 	UPROPERTY(Transient)
 	TObjectPtr<AActor> Target;
-
-	UPROPERTY(EditDefaultsOnly)
-	float ImpactDistance = 100.0f;
-	
+		
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent;
 
+	AFDPlayerController* GetInstigatorController() const;
+
 	virtual void OnImpact();
+
+	float LastDistanceSQRT = 0.0f;
 };

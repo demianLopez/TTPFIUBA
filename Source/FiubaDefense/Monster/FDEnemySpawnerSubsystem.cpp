@@ -8,6 +8,8 @@
 #include "Data/FDMonsterDataAsset.h"
 #include "Engine/AssetManager.h"
 #include "Game/FDGameMode.h"
+#include "GameFramework/GameStateBase.h"
+#include "Player/FDPlayerState.h"
 
 TStatId UFDEnemySpawnerSubsystem::GetStatId() const
 {
@@ -103,7 +105,7 @@ void UFDEnemySpawnerSubsystem::Tick(float DeltaTime)
 		
 	const float MatchTime = FDGameMode->GetMatchElapsedTime();
 	const float LastSpawnedTime = GetLastSpawnedTimeElapsed();
-	const int32 Enemies = SpawnedMonsters.Num();
+	const int32 Enemies = GetTotalMonsterKilled();
 
 	const float SpawnThreshold = DefenseSettings->K1 / (1.0f + DefenseSettings->K2 * MatchTime + DefenseSettings->K3 * Enemies);
 
@@ -111,6 +113,24 @@ void UFDEnemySpawnerSubsystem::Tick(float DeltaTime)
 	{
 		SpawnEnemy();
 	}
+}
+
+int32 UFDEnemySpawnerSubsystem::GetTotalMonsterKilled() const
+{
+	const TArray<APlayerState*> PlayerArray = GetWorld()->GetGameState()->PlayerArray;
+
+	int32 TotalMonsters = 0;
+	for(const APlayerState* PlayerState : PlayerArray)
+	{
+		const AFDPlayerState* FDPlayerState = Cast<AFDPlayerState>(PlayerState);
+
+		if(!IsValid(FDPlayerState))
+			continue;
+
+		TotalMonsters += FDPlayerState->GetEnemiesKilled();
+	}
+
+	return TotalMonsters;
 }
 
 void UFDEnemySpawnerSubsystem::SpawnEnemy()

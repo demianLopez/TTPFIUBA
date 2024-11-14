@@ -4,7 +4,11 @@
 #include "Monster/FDMonster.h"
 
 #include "Components/SphereComponent.h"
+#include "Engine/DamageEvents.h"
 #include "GameFramework/FloatingPawnMovement.h"
+#include "Player/FDPlayerController.h"
+#include "Player/FDPlayerState.h"
+#include "Tower/FDTower.h"
 
 // Sets default values
 AFDMonster::AFDMonster()
@@ -31,8 +35,30 @@ float AFDMonster::TakeDamage(float Damage, const FDamageEvent& DamageEvent, ACon
 
 	if(Health <= 0.0f)
 	{
-		Destroy();
+		OnKilled(Cast<AFDPlayerController>(EventInstigator));
 	}
 	
 	return ActualDamage;
+}
+
+void AFDMonster::OnKilled(AFDPlayerController* KilledByPlayer)
+{
+	AFDPlayerState* FDPlayerState = KilledByPlayer->GetPlayerState<AFDPlayerState>();
+	FDPlayerState->IncrementKillCount();
+	FDPlayerState->AddGold(GoldReward);
+	
+	Destroy();
+}
+
+bool AFDMonster::TryAttack(AFDTower* Tower)
+{
+	if(!IsValid(Tower))
+		return false;
+
+	FPointDamageEvent PointDamageEvent;
+	PointDamageEvent.Damage = MonsterDamage;
+		
+	Tower->TakeDamage(MonsterDamage, PointDamageEvent, GetInstigatorController(), this);
+
+	return true;
 }

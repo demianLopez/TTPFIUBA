@@ -7,6 +7,7 @@
 #include "FDTower.generated.h"
 
 class UCapsuleComponent;
+class AFDPlayerController;
 
 UCLASS()
 class FIUBADEFENSE_API AFDTower : public AActor
@@ -18,12 +19,17 @@ public:
 	AFDTower();
 
 	FVector GetFeetLocationOffset() const;
+	FVector GetFeetLocation() const;
+
+	virtual float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator,
+		AActor* DamageCauser) override;
 
 	virtual void PostInitializeComponents() override;
 
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
 
+	AFDPlayerController* GetOwningPlayer() const;
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
@@ -33,4 +39,6 @@ protected:
 
 	float CurrentHealth;
 	float MaxHealth;
+
+	void OnTowerKilled();
 };

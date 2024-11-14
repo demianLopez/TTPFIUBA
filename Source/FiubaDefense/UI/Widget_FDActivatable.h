@@ -31,12 +31,9 @@ public:
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 	
 protected:
-
-	UPROPERTY(Transient)
-	TObjectPtr<UWidget_HUD> OwningHUD;
-
-	friend class UWidget_HUD;
 	
+	UWidget_HUD* GetHUDWidget() const;
+		
 	virtual void NativeOnInitialized() override;
 
 	virtual void RegisterInputActions();

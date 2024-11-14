@@ -4,20 +4,22 @@
 #include "EngineUtils.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
+#include "BehaviorTree/Blackboard/BlackboardKeyType_Vector.h"
+#include "Monster/FDMonster.h"
 #include "Tower/FDTower.h"
 
 UBTTask_FindNearestTower::UBTTask_FindNearestTower()
 {
-	BlackboardKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTTask_FindNearestTower, BlackboardKey), AFDTower::StaticClass());
+	BlackboardKey.AddVectorFilter(this, GET_MEMBER_NAME_CHECKED(UBTTask_FindNearestTower, BlackboardKey));
 }
 
 EBTNodeResult::Type UBTTask_FindNearestTower::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	AController* ControllerOwner = OwnerComp.GetOwner<AController>();
-	APawn* ControllingPawn = nullptr;
+	AFDMonster* ControllingPawn = nullptr;
 	if (ControllerOwner)
 	{
-		ControllingPawn = ControllerOwner->GetPawn();
+		ControllingPawn = ControllerOwner->GetPawn<AFDMonster>();
 	}
 
 	if(!IsValid(ControllingPawn))
@@ -44,8 +46,17 @@ EBTNodeResult::Type UBTTask_FindNearestTower::ExecuteTask(UBehaviorTreeComponent
 	if(!IsValid(NearestTower))
 		return EBTNodeResult::Failed;
 
+	FVector GroundPoint = NearestTower->GetFeetLocation();
+
+	FVector SegmentToMonster = ControllingPawn->GetActorLocation() - GroundPoint;
+	SegmentToMonster.Z = 0.0f;
+
+	GroundPoint += SegmentToMonster.GetSafeNormal() * ControllingPawn->GetAttackRange();
+	
+	//DrawDebugSphere(GetWorld(), GroundPoint, 50.0f, 8, FColor::Red, false, 2.0f);
+	
 	UBlackboardComponent* BBComponent = OwnerComp.GetBlackboardComponent();
-	BBComponent->SetValue<UBlackboardKeyType_Object>(BlackboardKey.GetSelectedKeyID(), NearestTower);
+	BBComponent->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), GroundPoint);
 
 	return EBTNodeResult::Succeeded;
 }

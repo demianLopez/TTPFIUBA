@@ -3,6 +3,8 @@
 
 #include "UI/Widget_FDActivatable.h"
 
+#include "FDHUD.h"
+
 UWidget_FDActivatable::UWidget_FDActivatable()
 {
 	InputMappingPriority = 10;
@@ -22,6 +24,17 @@ TOptional<FUIInputConfig> UWidget_FDActivatable::GetDesiredInputConfig() const
 	default:
 		return TOptional<FUIInputConfig>();
 	}
+}
+
+UWidget_HUD* UWidget_FDActivatable::GetHUDWidget() const
+{
+	AFDHUD* FDHUD = GetOwningPlayer()->GetHUD<AFDHUD>();
+	if(IsValid(FDHUD))
+	{
+		return FDHUD->GetBaseCanvasWidget();
+	}
+
+	return nullptr;
 }
 
 void UWidget_FDActivatable::NativeOnInitialized()
