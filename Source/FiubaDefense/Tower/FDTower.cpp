@@ -3,14 +3,19 @@
 
 #include "Tower/FDTower.h"
 
+#include "FDTowerGridComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Player/FDPlayerController.h"
+#include "Weapons/FDWeaponBase.h"
 
 // Sets default values
 AFDTower::AFDTower()
 {
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>("RootCapsule");
+	TowerGridComponent = CreateDefaultSubobject<UFDTowerGridComponent>("FDTowerGrid");
+	
 	SetRootComponent(CapsuleComponent);
+	TowerGridComponent->SetupAttachment(RootComponent);
 }
 
 float AFDTower::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator,
@@ -50,6 +55,19 @@ void AFDTower::PostInitializeComponents()
 
 	MaxHealth = InitialHealth;
 	CurrentHealth = MaxHealth;
+}
+
+void AFDTower::AddWeapon(AFDWeaponBase* Weapon)
+{
+	Weapons.Add(Weapon);
+}
+
+void AFDTower::TickTower()
+{
+	for (TWeakObjectPtr<AFDWeaponBase> Weapon : Weapons)
+	{
+		Weapon->TickAction();
+	}
 }
 
 void AFDTower::OnTowerKilled()

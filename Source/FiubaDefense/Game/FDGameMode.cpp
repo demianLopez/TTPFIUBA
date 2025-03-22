@@ -3,6 +3,7 @@
 
 #include "Game/FDGameMode.h"
 
+#include "EngineUtils.h"
 #include "FDFunctionLibrary.h"
 #include "FDShopComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -18,7 +19,7 @@
 
 AFDGameMode::AFDGameMode()
 {
-	PrimaryActorTick.bCanEverTick = true;
+
 }
 
 void AFDGameMode::SetPlayerDefaults(APawn* PlayerPawn)
@@ -26,46 +27,27 @@ void AFDGameMode::SetPlayerDefaults(APawn* PlayerPawn)
 	Super::SetPlayerDefaults(PlayerPawn);
 
 	AFDPlayerPawn* FDPlayerPawn = Cast<AFDPlayerPawn>(PlayerPawn);
-
-	FVector FeetOffset = FVector::ZeroVector;
 	
-	const AController* Controller = PlayerPawn->GetController();
-	const APlayerStart* PlayerStart = Cast<APlayerStart>(Controller->StartSpot.Get());
-	if(IsValid(PlayerStart))
+	AFDTower* AvailableTower = nullptr;
+	for (TActorIterator<AFDTower> It(GetWorld()); It; ++It)
 	{
-		const UCapsuleComponent* PlayerStartCapsule = PlayerStart->GetCapsuleComponent();		
-		FeetOffset += FVector(0.0f, 0.0f, -PlayerStartCapsule->GetScaledCapsuleHalfHeight());
-	}
-	
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParameters.Owner = PlayerPawn->GetController();
-	
-	const AFDTower* DefaultTowerObject = GetDefault<AFDTower>(PlayerTowerClass);
-	FeetOffset += DefaultTowerObject->GetFeetLocationOffset();
+		AFDTower* Tower = *It;
 
-	const FVector& TowerSpawnLocation = FDPlayerPawn->GetActorLocation() + FeetOffset;
-	const FRotator& TowerSpawnRotation = FDPlayerPawn->GetActorRotation();
-	
-	AFDTower* PlayerTower = GetWorld()->SpawnActor<AFDTower>(PlayerTowerClass, TowerSpawnLocation, TowerSpawnRotation, SpawnParameters);
-	FDPlayerPawn->SetTowerReference(PlayerTower);
+		if (!IsValid(Tower))
+			continue;
+
+		AvailableTower = Tower;
+		break;
+	}
+
+	AvailableTower->SetOwner(PlayerPawn->GetController());
+	FDPlayerPawn->SetTowerReference(AvailableTower);
+	PlayerTower = AvailableTower;
 }
 
-void AFDGameMode::Tick(float DeltaSeconds)
+AFDTower* AFDGameMode::GetTower()
 {
-	Super::Tick(DeltaSeconds);
-
-	if(bMatchStarted)
-	{
-		const float CurrentTimeStamp = GetWorld()->GetTimeSeconds();
-		const float ElapsedTime = CurrentTimeStamp - LastGoldTickTimeStamp;
-
-		if(ElapsedTime >= GoldTickTime)
-		{
-			TickGold();
-			LastGoldTickTimeStamp = CurrentTimeStamp;
-		}	
-	}
+	return PlayerTower.Get();
 }
 
 void AFDGameMode::TickGold()
@@ -83,50 +65,64 @@ void AFDGameMode::StartPlay()
 {
 	Super::StartPlay();
 	
-	FTimerHandle TempTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TempTimerHandle, this, &ThisClass::StartMatch, 5.0f);
-}
-
-float AFDGameMode::GetMatchElapsedTime() const
-{
-	const float CurrentTimeSeconds = GetWorld()->GetTimeSeconds();
-	return CurrentTimeSeconds - MatchStartedTime;
+	StartMatch();
 }
 
 void AFDGameMode::StartMatch()
 {
-	MatchStartedTime = GetWorld()->GetTimeSeconds();
-	LastGoldTickTimeStamp = MatchStartedTime;
 	bMatchStarted = true;
+	RefreshShop();
 	
 	UFDEnemySpawnerSubsystem* SpawnerSubsystem = UFDEnemySpawnerSubsystem::Get(this);
 	SpawnerSubsystem->StartSpawning();
+	
+	StartNewTurn();
+}
 
-	GetWorld()->GetTimerManager().SetTimer(ShopTimerHandle, this, &ThisClass::OnRefreshShopTimer, ShopRefreshTime, true);
-	OnRefreshShopTimer();
+void AFDGameMode::StartNewTurn()
+{
+	CurrentTurn++;
+
+	if ((CurrentTurn % TurnsToRefreshShop) == 0)
+	{
+		RefreshShop();
+	}
+
+	TickGold();
+}
+
+void AFDGameMode::AdvanceTurn()
+{
+	PlayerTower->TickTower();
+	
+	UFDEnemySpawnerSubsystem* SpawnerSubsystem = UFDEnemySpawnerSubsystem::Get(this);
+	SpawnerSubsystem->TickMonsters();
+
+	StartNewTurn();
 }
 
 AFDWeaponBase* AFDGameMode::CreateWeaponForPlayer(const APlayerController* PlayerController,
-	const UFDWeaponDataAsset* WeaponDataAsset)
+                                                  const UFDWeaponDataAsset* WeaponDataAsset)
 {
-	AFDTower* PlayerTower = UFDFunctionLibrary::GetPlayerTower(PlayerController);
+	AFDTower* Tower = UFDFunctionLibrary::GetPlayerTower(PlayerController);
 
-	if(!IsValid(PlayerTower))
+	if(!IsValid(Tower))
 		return nullptr;
 
 	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.Owner = PlayerTower;
+	SpawnParameters.Owner = Tower;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	
 	AFDWeaponBase* NewWeapon = GetWorld()->SpawnActor<AFDWeaponBase>(WeaponDataAsset->WeaponClass.LoadSynchronous()
-		, PlayerTower->GetActorLocation(), PlayerTower->GetActorRotation(), SpawnParameters);
+		, Tower->GetActorLocation(), Tower->GetActorRotation(), SpawnParameters);
 
 	NewWeapon->InitWithData(WeaponDataAsset);
+	Tower->AddWeapon(NewWeapon);
 
 	return NewWeapon;
 }
 
-void AFDGameMode::OnRefreshShopTimer()
+void AFDGameMode::RefreshShop()
 {
 	for(FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator() ; It; ++It)
 	{

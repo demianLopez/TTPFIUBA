@@ -9,6 +9,8 @@
 #include "Player/FDPlayerController.h"
 #include "Player/FDPlayerState.h"
 #include "Tower/FDTower.h"
+#include "Tower/FDTowerGridComponent.h"
+#include "Tower/FDTowerGridComponentTypes.h"
 
 // Sets default values
 AFDMonster::AFDMonster()
@@ -26,8 +28,29 @@ void AFDMonster::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunct
 	SetActorRotation(Velocity.ToOrientationRotator());
 }
 
+void AFDMonster::MoveToTile(TSharedPtr<FFDTowerGridTile> Tile)
+{
+	if (Tile == CurrentTile)
+		return;
+	
+	if (CurrentTile.IsValid())
+	{
+		auto CurrentTileShared = CurrentTile.Pin();
+		CurrentTileShared->MonstersInTile.Remove(this);
+	}
+	
+	SetActorLocation(Tile->GetTileWorldLocation());
+	Tile->MonstersInTile.Add(this);
+	CurrentTile = Tile;
+}
+
+void AFDMonster::SetTargetTower(AFDTower* Tower)
+{
+	TargetTower = Tower;
+}
+
 float AFDMonster::TakeDamage(float Damage, const FDamageEvent& DamageEvent, AController* EventInstigator,
-	AActor* DamageCauser)
+                             AActor* DamageCauser)
 {
 	const float ActualDamage = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 
@@ -43,11 +66,48 @@ float AFDMonster::TakeDamage(float Damage, const FDamageEvent& DamageEvent, ACon
 
 void AFDMonster::OnKilled(AFDPlayerController* KilledByPlayer)
 {
+	if (CurrentTile.IsValid())
+	{
+		CurrentTile.Pin()->MonstersInTile.Remove(this);
+	}
+	
 	AFDPlayerState* FDPlayerState = KilledByPlayer->GetPlayerState<AFDPlayerState>();
 	FDPlayerState->IncrementKillCount();
 	FDPlayerState->AddGold(GoldReward);
+
+	OnMonsterKilled.Broadcast(this);
 	
 	Destroy();
+}
+
+void AFDMonster::PerformAction()
+{
+	if (!CurrentTile.IsValid())
+		return;
+
+	auto CurrentTileShared = CurrentTile.Pin();
+
+	int32 LocX = CurrentTileShared->TileLocation.X;
+	int32 LocY = CurrentTileShared->TileLocation.Y;
+
+	if (FMath::Abs(LocX) + FMath::Abs(LocY) <= 1)
+	{
+		TryAttack(TargetTower.Get());
+		return;
+	}
+	
+	FIntVector2 MovDirection;	
+	MovDirection.X = LocX > 0 ? -1 : LocX < 0 ? 1 : 0;
+	MovDirection.Y = LocY > 0 ? -1 : LocY < 0 ? 1 : 0;
+
+	// Only Move in one direction, X has priority
+	if (MovDirection.X != 0)
+	{
+		MovDirection.Y = 0;
+	}
+
+	FIntVector2 FinalLocation = CurrentTileShared->TileLocation + MovDirection;
+	MoveToTile(TargetTower->GetGridComponent()->GetTileAt(FinalLocation));
 }
 
 bool AFDMonster::TryAttack(AFDTower* Tower)

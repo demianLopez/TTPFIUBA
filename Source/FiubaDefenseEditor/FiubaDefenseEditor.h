@@ -9,5 +9,10 @@ class FFiubaDefenseEditorModule: public IModuleInterface
 {
 public:
 	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;	
+	virtual void ShutdownModule() override;
+
+protected:
+
+	void RegisterComponentVisualizers();
+	void UnregisterComponentVisualizers();
 };

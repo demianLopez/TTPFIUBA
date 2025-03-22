@@ -10,11 +10,9 @@
 #include "Game/FDGameMode.h"
 #include "GameFramework/GameStateBase.h"
 #include "Player/FDPlayerState.h"
-
-TStatId UFDEnemySpawnerSubsystem::GetStatId() const
-{
-	return TStatId();
-}
+#include "Tower/FDTower.h"
+#include "Tower/FDTowerGridComponent.h"
+#include "Tower/FDTowerGridComponentTypes.h"
 
 void UFDEnemySpawnerSubsystem::StartSpawning()
 {
@@ -27,15 +25,9 @@ void UFDEnemySpawnerSubsystem::StopSpawning()
 	bActive = false;
 }
 
-float UFDEnemySpawnerSubsystem::GetLastSpawnedTimeElapsed() const
-{
-	const float WorldTimeStamp = GetWorld()->GetTimeSeconds();
-	return WorldTimeStamp - LastSpawnedTimeStamp;
-}
-
 void UFDEnemySpawnerSubsystem::UpdateSpawnTimeStamp()
 {
-	LastSpawnedTimeStamp = GetWorld()->GetTimeSeconds();
+	LastSpawnedTurn = FDGameMode->GetCurrentTurn();
 }
 
 UFDEnemySpawnerSubsystem* UFDEnemySpawnerSubsystem::Get(const UObject* WorldContextObject)
@@ -96,20 +88,36 @@ void UFDEnemySpawnerSubsystem::OnMonsterLoadedComplete()
 	}
 }
 
-void UFDEnemySpawnerSubsystem::Tick(float DeltaTime)
+void UFDEnemySpawnerSubsystem::TickMonsters()
+{
+	TickMovement();
+	TickSpawning();
+}
+
+void UFDEnemySpawnerSubsystem::TickMovement()
+{
+	for (AFDMonster* Monster : SpawnedMonsters)
+	{
+		Monster->PerformAction();
+	}
+}
+
+void UFDEnemySpawnerSubsystem::TickSpawning()
 {
 	if(!bActive)
 		return;
 
 	const UFiubaDefenseDeveloperSettings* DefenseSettings = UFiubaDefenseDeveloperSettings::Get();
 		
-	const float MatchTime = FDGameMode->GetMatchElapsedTime();
-	const float LastSpawnedTime = GetLastSpawnedTimeElapsed();
+	const float CurrentTurn = FDGameMode->GetCurrentTurn();
+	const float TurnsWithoutSpawning = CurrentTurn - LastSpawnedTurn;
+	
 	const int32 Enemies = GetTotalMonsterKilled();
 
-	const float SpawnThreshold = DefenseSettings->K1 / (1.0f + DefenseSettings->K2 * MatchTime + DefenseSettings->K3 * Enemies);
-
-	if(LastSpawnedTime > SpawnThreshold)
+	float SpawnThisTurnF = (DefenseSettings->BaseSpawn + DefenseSettings->SpawnGrowthFactor * TurnsWithoutSpawning) * (1 + CurrentTurn / DefenseSettings->TurnsConstant);
+	int32 SpawnThisTurnInt = FMath::RoundToZero(SpawnThisTurnF);
+	
+	for (int32 i = 0; i < SpawnThisTurnInt; i++)
 	{
 		SpawnEnemy();
 	}
@@ -145,23 +153,31 @@ void UFDEnemySpawnerSubsystem::SpawnEnemy()
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	const FVector& SpawnLocation = FindSpawnLocation();
-	
-	AFDMonster* Monster = GetWorld()->SpawnActor<AFDMonster>(MonsterClass, SpawnLocation, FRotator::ZeroRotator, SpawnParameters);
+	AFDTower* Tower = FDGameMode->GetTower();
+	UFDTowerGridComponent* GridComponent = Tower->GetGridComponent();
 
+	TArray<TSharedPtr<FFDTowerGridTile>> BorderTiles;
+	GridComponent->GetBorderTiles(BorderTiles);
+
+	TSharedPtr<FFDTowerGridTile> RandomBorder = BorderTiles[FMath::RandRange(0, BorderTiles.Num() - 1)];
+	
+	AFDMonster* Monster = GetWorld()->SpawnActor<AFDMonster>(MonsterClass, RandomBorder->GetTileWorldLocation(), FRotator::ZeroRotator, SpawnParameters);
+	Monster->MoveToTile(RandomBorder);
+
+	Monster->OnMonsterKilled.AddUObject(this, &ThisClass::OnMonsterKilled);
+	
 	SetUpMonsterStats(Monster);	
 	SpawnedMonsters.Add(Monster);
+
+	Monster->SetTargetTower(Tower);
 	
 	UpdateSpawnTimeStamp();
 }
 
-FVector UFDEnemySpawnerSubsystem::FindSpawnLocation() const
+void UFDEnemySpawnerSubsystem::OnMonsterKilled(AFDMonster* Monster)
 {
-	const UFiubaDefenseDeveloperSettings* DefenseSettings = UFiubaDefenseDeveloperSettings::Get();
-	const float Distance = FMath::RandRange(DefenseSettings->SpawnMinDistance, DefenseSettings->SpawnMaxDistance);
-	const float RandomAngle = FMath::RandRange(0.0f, PI * 2.0f);
-
-	return FVector(FMath::Cos(RandomAngle), FMath::Sin(RandomAngle), 0.0f) * Distance;
+	Monster->OnMonsterKilled.RemoveAll(this);
+	SpawnedMonsters.Remove(Monster);
 }
 
 void UFDEnemySpawnerSubsystem::SetUpMonsterStats(AFDMonster* Monster)

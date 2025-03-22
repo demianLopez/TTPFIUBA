@@ -6,8 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "FDTower.generated.h"
 
+class UFDTowerGridComponent;
 class UCapsuleComponent;
 class AFDPlayerController;
+class AFDWeaponBase;
 
 UCLASS()
 class FIUBADEFENSE_API AFDTower : public AActor
@@ -30,9 +32,17 @@ public:
 	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
 
 	AFDPlayerController* GetOwningPlayer() const;
+	void AddWeapon(AFDWeaponBase* Weapon);
+
+	void TickTower();
+
+	UFDTowerGridComponent* GetGridComponent() const { return TowerGridComponent; }
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UFDTowerGridComponent> TowerGridComponent;
 
 	UPROPERTY(EditDefaultsOnly)
 	float InitialHealth = 100.0f;
@@ -40,5 +50,7 @@ protected:
 	float CurrentHealth;
 	float MaxHealth;
 
+	TArray<TWeakObjectPtr<AFDWeaponBase>> Weapons;
+	
 	void OnTowerKilled();
 };

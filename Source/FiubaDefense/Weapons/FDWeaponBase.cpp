@@ -11,8 +11,7 @@
 // Sets default values
 AFDWeaponBase::AFDWeaponBase()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.TickInterval = 0.1f;
+
 }
 
 AFDTower* AFDWeaponBase::GetOwningTower() const
@@ -24,24 +23,15 @@ void AFDWeaponBase::InitWithData(const UFDWeaponDataAsset* InWeaponDataAsset)
 {
 	WeaponData = InWeaponDataAsset;
 	FireRate = WeaponData->BaseFireRate;
-	LastFireTimestamp = GetWorld()->GetTimeSeconds();
 }
 
-void AFDWeaponBase::Tick(float DeltaSeconds)
+void AFDWeaponBase::TickAction()
 {
-	Super::Tick(DeltaSeconds);
+	TurnsWithoutFiring++;
 
-	float CurrentTimeStamp = GetWorld()->GetTimeSeconds();
-
-	const float Delta = CurrentTimeStamp - LastFireTimestamp;
-
-	if(Delta >= FireRate)
+	if(TurnsWithoutFiring >= FireRate)
 	{
-		if(!IsValid(Target))
-		{
-			FindTarget();
-		}
-
+		FindTarget();
 		FireProjectile();
 	}
 }
@@ -73,6 +63,6 @@ void AFDWeaponBase::FireProjectile()
 
 	Projectile->GoToTarget(Target);
 
-	LastFireTimestamp = GetWorld()->GetTimeSeconds();
+	TurnsWithoutFiring = 0;
 }
 

@@ -19,13 +19,13 @@ public:
 	static const UFiubaDefenseDeveloperSettings* Get();
 
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category="Spawn")
-	float K1 = 5.0f;
+	float BaseSpawn = 0.5f;
 
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category="Spawn")
-	float K2 = 0.01f;
+	float SpawnGrowthFactor = 0.5f;
 
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category="Spawn")
-	float K3 = 0.01f;
+	float TurnsConstant = 20.0f;
 
 	UPROPERTY(Config, EditDefaultsOnly, BlueprintReadOnly, Category="Spawn")
 	float SpawnMinDistance = 1000.0f;

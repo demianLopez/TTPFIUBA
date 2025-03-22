@@ -26,30 +26,31 @@ public:
 
 	virtual void StartPlay() override;
 
-	float GetMatchElapsedTime() const;
-	
-	virtual void Tick(float DeltaSeconds) override;
-
 	AFDWeaponBase* CreateWeaponForPlayer(const APlayerController* PlayerController, const UFDWeaponDataAsset* WeaponDataAsset);
+
+	FORCEINLINE int32 GetCurrentTurn() const { return CurrentTurn; }
+
+	void AdvanceTurn();
+
+	AFDTower* GetTower();
 protected:
 
-	float LastGoldTickTimeStamp = 0.0f;
+	void StartNewTurn();
+	
+	int32 CurrentTurn = 0;
 
 	UPROPERTY(EditDefaultsOnly)
 	float GoldTickTime = 1.0f;
 	
 	void StartMatch();
 	void TickGold();
-
-	float MatchStartedTime;
+	
 	bool bMatchStarted = false;
+		
+	void RefreshShop();
 
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<AFDTower> PlayerTowerClass;
+	int32 TurnsToRefreshShop = 3;
 
-	FTimerHandle ShopTimerHandle;
-	void OnRefreshShopTimer();
-
-	UPROPERTY(EditDefaultsOnly)
-	float ShopRefreshTime = 30.0f;
+	TWeakObjectPtr<AFDTower> PlayerTower;
 };

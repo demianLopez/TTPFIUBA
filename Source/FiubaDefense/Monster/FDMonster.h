@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "FDMonster.generated.h"
 
+struct FFDTowerGridTile;
 class AFDTower;
 class AFDPlayerController;
 class USphereComponent;
@@ -20,12 +21,21 @@ public:
 	// Sets default values for this actor's properties
 	AFDMonster();
 
+	void MoveToTile(TSharedPtr<FFDTowerGridTile> Tile);
+
 	virtual void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
 	virtual float TakeDamage(float Damage, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	float GetAttackRange() const { return AttackRange; }
 
 	bool TryAttack(AFDTower* Tower);
+
+	void SetTargetTower(AFDTower* Tower);
+
+	void PerformAction();
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FMonsterDelegate, AFDMonster* /* Monster */)
+	FMonsterDelegate OnMonsterKilled;
 	
 protected:
 	UPROPERTY(EditDefaultsOnly)
@@ -33,6 +43,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<USphereComponent> SphereComponent;
+
+	TWeakObjectPtr<AFDTower> TargetTower;
+
+	TWeakPtr<FFDTowerGridTile> CurrentTile;
 	
 	float Health = 2.0f;
 	float GoldReward = 5.0f;

@@ -30,10 +30,7 @@ protected:
 	TObjectPtr<UTextBlock> TextBlock_KilledEnemies;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> TextBlock_MatchMinsElapsed;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> TextBlock_MatchSecsElapsed;
+	TObjectPtr<UTextBlock> TextBlock_TurnsElapsed;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UProgressBar> ProgressBar_HealthBar;

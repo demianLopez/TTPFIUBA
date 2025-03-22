@@ -21,7 +21,7 @@ public:
 
 	virtual void InitWithData(const UFDWeaponDataAsset* InWeaponDataAsset);
 
-	virtual void Tick(float DeltaSeconds) override;
+	virtual void TickAction();
 
 	AFDTower* GetOwningTower() const;
 protected:
@@ -32,8 +32,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AFDBaseProjectile> ProjectileToSpawn;
 
-	float FireRate = 1.0f;
-	float LastFireTimestamp = 0.0f;
+	int32 FireRate = 1;
+	int32 TurnsWithoutFiring = 0;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AActor> Target;

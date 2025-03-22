@@ -37,5 +37,5 @@ public:
 	TSoftClassPtr<AFDWeaponBase> WeaponClass;
 
 	UPROPERTY(EditDefaultsOnly)
-	float BaseFireRate = 1.0f;
+	int32 BaseFireRate = 1.0f;
 };

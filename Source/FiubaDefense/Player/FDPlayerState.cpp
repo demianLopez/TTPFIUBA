@@ -5,7 +5,7 @@
 
 void AFDPlayerState::IncrementIncome()
 {
-	Gold += 50.0f;
+	Gold += 500.0f;
 }
 
 void AFDPlayerState::SubstractGold(float Amount)

@@ -71,7 +71,10 @@ void UFDShopComponent::OnWeaponLoadedComplete()
 }
 
 void UFDShopComponent::RefreshShop()
-{	
+{
+	if (WeaponDataAssets.IsEmpty())
+		return;
+	
 	for(int32 i = 0; i < ShopItemsPerRefresh; i++)
 	{
 		TSharedPtr<FDShopItem> Item = SellingItems[i];

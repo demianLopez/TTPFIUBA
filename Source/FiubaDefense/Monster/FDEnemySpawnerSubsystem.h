@@ -15,7 +15,7 @@ struct FStreamableHandle;
  * 
  */
 UCLASS()
-class FIUBADEFENSE_API UFDEnemySpawnerSubsystem : public UTickableWorldSubsystem
+class FIUBADEFENSE_API UFDEnemySpawnerSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 	
@@ -23,25 +23,27 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	static UFDEnemySpawnerSubsystem* Get(const UObject* WorldContextObject);
-	virtual TStatId GetStatId() const override;
 
 	void StartSpawning();
 	void StopSpawning();
 
-	virtual void Tick(float DeltaTime) override;
-	
+	void TickMonsters();
+		
 	FORCEINLINE const TArray<AFDMonster*>& GetSpawnedMosnsters() const { return SpawnedMonsters; }
 protected:
 	virtual bool DoesSupportWorldType(const EWorldType::Type WorldType) const override;
-	float GetLastSpawnedTimeElapsed() const;
+
 	void UpdateSpawnTimeStamp();
+	void OnMonsterKilled(AFDMonster* Monster);
+	
+	void TickMovement();
+	void TickSpawning();
 
 	int32 GetTotalMonsterKilled() const;
 
 	void SetUpMonsterStats(AFDMonster* Monster);
 
 	void SpawnEnemy();
-	FVector FindSpawnLocation() const;
 	
 	void OnMonsterLoadedComplete();
 	TSharedPtr<FStreamableHandle> MonstersStreamableHandle;
@@ -55,6 +57,6 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<AFDGameMode> FDGameMode;
 
-	float LastSpawnedTimeStamp = 0.0f;
+	float LastSpawnedTurn = 0.0f;
 	bool bActive = false;
 };
