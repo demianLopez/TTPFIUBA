@@ -6,6 +6,7 @@
 #include "EngineUtils.h"
 #include "FDFunctionLibrary.h"
 #include "FDShopComponent.h"
+#include "FIUBAPythonInterface.h"
 #include "Components/CapsuleComponent.h"
 #include "Data/FDWeaponDataAsset.h"
 #include "GameFramework/GameStateBase.h"
@@ -66,6 +67,10 @@ void AFDGameMode::StartPlay()
 	Super::StartPlay();
 	
 	StartMatch();
+
+	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
+	FIUBAPythonSubsystem.InitModel();
+	FIUBAPythonSubsystem.Train();
 }
 
 void AFDGameMode::StartMatch()

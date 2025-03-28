@@ -9,7 +9,7 @@
 
 void FFIUBAPythonModule::StartupModule()
 {
-	RunTest();
+	//RunTest();
 }
 
 void FFIUBAPythonModule::ShutdownModule()
