@@ -4,11 +4,17 @@
 
 #include "CoreMinimal.h"
 
-class FIUBAPYTHON_API IFIUBAPythonInterface
+struct FFIRewardValues
+{
+	float Coeficient = 0.0f;
+	float Value = 0.0f;
+};
+
+class FIUBAPYTHON_API IFIUBAPythonInterface 
 {
 public:
 
 	static IFIUBAPythonInterface& Get();
-	virtual void InitModel() = 0;
-	virtual void Train() = 0;
+	virtual int32 InitializeTrain(const TArray<float>& Values, int32 ActionStateDim) = 0;
+	virtual int32 Train(const TArray<float>& Values, const TArray<FFIRewardValues>& MaxValues, const TArray<FFIRewardValues>& MinValues, bool FinishTrain, bool FinishLoop) = 0;
 };

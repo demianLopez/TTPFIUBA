@@ -38,4 +38,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	int32 BaseFireRate = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+	float Damage = 1.0f;
 };

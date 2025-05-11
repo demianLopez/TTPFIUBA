@@ -5,15 +5,30 @@
 
 FFPObjectContainer::~FFPObjectContainer()
 {
-	Py_DECREF(PyObjectRef);
+	if (PyObjectRef != nullptr)
+	{
+		Py_DECREF(PyObjectRef);
+	}
 }
 
 FFPyObjectPtr::FFPyObjectPtr(PyObject* Object)
 {
-	Container = MakeShareable(new FFPObjectContainer(Object));
+	if (Object == nullptr)
+	{
+		PyErr_Print();
+	}
+	else
+	{
+		Container = MakeShareable(new FFPObjectContainer(Object));
+	}
 }
 
-FFPyObjectPtr::operator PyObject*() const
+bool FFPyObjectPtr::IsValid() const
+{
+	return Container.IsValid() && Container->PyObjectRef != nullptr;
+}
+
+PyObject* FFPyObjectPtr::Get() const
 {
 	return Container->PyObjectRef;
 }

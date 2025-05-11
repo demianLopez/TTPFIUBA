@@ -20,7 +20,16 @@ public class FIUBAPython : ModuleRules
 				// ... add other private include paths required here ...
 			}
 			);
-			
+
+		if (Target.Type == TargetType.Editor)
+		{
+			PrivateDependencyModuleNames.AddRange(
+				new string[]
+				{
+					"UnrealEd",
+					"Slate"
+				});
+		}
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]

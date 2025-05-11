@@ -24,6 +24,8 @@ public:
 	virtual void TickAction();
 
 	AFDTower* GetOwningTower() const;
+
+	FORCEINLINE const UFDWeaponDataAsset* GetWeaponData() const { return WeaponData.Get(); }
 protected:
 
 	UPROPERTY(Transient)

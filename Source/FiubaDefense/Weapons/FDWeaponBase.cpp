@@ -42,6 +42,9 @@ void AFDWeaponBase::FindTarget()
 
 	const TArray<AFDMonster*>& SpawnedMonsters = SpawnerSubsystem->GetSpawnedMosnsters();
 
+	if (SpawnedMonsters.IsEmpty())
+		return;
+	
 	int32 RandomIndex = FMath::RandRange(1, SpawnedMonsters.Num()) - 1;
 
 	Target = SpawnedMonsters[RandomIndex];

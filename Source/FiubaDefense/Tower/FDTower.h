@@ -37,6 +37,8 @@ public:
 	void TickTower();
 
 	UFDTowerGridComponent* GetGridComponent() const { return TowerGridComponent; }
+
+	int32 GetWeaponNumbers() const { return Weapons.Num(); }
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;

@@ -43,6 +43,9 @@ TSharedPtr<FFDTowerGridTile> UFDTowerGridComponent::GetTileAt(FIntVector2 GridTi
 
 void UFDTowerGridComponent::CreateGridTiles()
 {
+	GridSize.X = GridRadiusX * 2 + 1;
+	GridSize.Y = GridRadiusY * 2 + 1;
+	
 	for (int32 X = -GridRadiusX; X <= GridRadiusX; X++)
 	{
 		for (int32 Y = -GridRadiusY; Y <= GridRadiusY; Y++)

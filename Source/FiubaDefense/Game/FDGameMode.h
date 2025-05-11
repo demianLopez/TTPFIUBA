@@ -53,4 +53,10 @@ protected:
 	int32 TurnsToRefreshShop = 3;
 
 	TWeakObjectPtr<AFDTower> PlayerTower;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UFDWeaponDataAsset> Weapon1;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UFDWeaponDataAsset> Weapon2;
 };

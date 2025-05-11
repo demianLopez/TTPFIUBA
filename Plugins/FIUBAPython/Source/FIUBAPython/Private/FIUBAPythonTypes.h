@@ -20,9 +20,10 @@ public:
 	FFPyObjectPtr() {}
 	FFPyObjectPtr(PyObject* Object);
 
-	operator PyObject*() const;
-
+	PyObject* Get() const;
 	void Clear();
+
+	bool IsValid() const;
 protected:
 
 	TSharedPtr<FFPObjectContainer> Container;

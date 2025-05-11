@@ -8,6 +8,7 @@
 
 class AFDPlayerController;
 class UProjectileMovementComponent;
+class UFDWeaponDataAsset;
 
 UCLASS()
 class FIUBADEFENSE_API AFDBaseProjectile : public AActor
@@ -29,6 +30,8 @@ protected:
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent;
 
 	AFDPlayerController* GetInstigatorController() const;
+
+	const UFDWeaponDataAsset* FindWeaponData() const;
 
 	virtual void OnImpact();
 

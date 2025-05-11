@@ -66,6 +66,8 @@ void UFDEnemySpawnerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	
 	MonstersStreamableHandle = AssetManager.LoadPrimaryAssets(AssetIds, {"Game"}
 		, FStreamableDelegate::CreateUObject(this, &ThisClass::OnMonsterLoadedComplete));
+	
+	MonstersStreamableHandle->WaitUntilComplete();
 }
 
 void UFDEnemySpawnerSubsystem::OnMonsterLoadedComplete()
@@ -143,6 +145,9 @@ int32 UFDEnemySpawnerSubsystem::GetTotalMonsterKilled() const
 
 void UFDEnemySpawnerSubsystem::SpawnEnemy()
 {
+	if (MonsterDataAssets.Num() == 0)
+		return;
+	
 	int32 RandomMonsterIndex = FMath::RandRange(1, MonsterDataAssets.Num()) - 1;
 	const UFDMonsterDataAsset* MonsterDataAsset = MonsterDataAssets[RandomMonsterIndex];
 

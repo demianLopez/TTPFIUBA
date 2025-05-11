@@ -22,6 +22,8 @@ void AFDBaseProjectile::GoToTarget(AActor* InTarget)
 
 	Target = InTarget;
 	LastDistanceSQRT = GetSquaredDistanceTo(Target);
+
+	OnImpact();
 }
 
 AFDPlayerController* AFDBaseProjectile::GetInstigatorController() const
@@ -37,6 +39,16 @@ AFDPlayerController* AFDBaseProjectile::GetInstigatorController() const
 		return nullptr;
 
 	return Tower->GetOwningPlayer();
+}
+
+const UFDWeaponDataAsset* AFDBaseProjectile::FindWeaponData() const
+{
+	AFDWeaponBase* WeaponBase = Cast<AFDWeaponBase>(GetOwner());
+
+	if (!IsValid(WeaponBase))
+		return nullptr;
+
+	return WeaponBase->GetWeaponData();
 }
 
 void AFDBaseProjectile::Tick(float DeltaSeconds)

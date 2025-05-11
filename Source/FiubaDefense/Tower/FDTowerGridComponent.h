@@ -24,6 +24,10 @@ public:
 
 	void GetBorderTiles(TArray<TSharedPtr<FFDTowerGridTile>>& OutBorderTiles);
 	TSharedPtr<FFDTowerGridTile> GetTileAt(FIntVector2 GridTileLocation);
+
+	const FIntVector2& GetGridSize() const { return GridSize; }
+
+	FIntVector2 GetGridRadius() const { return FIntVector2(GridRadiusX, GridRadiusY); }
 protected:
 
 	void CreateGridTiles();
@@ -33,6 +37,8 @@ protected:
 	
 	UPROPERTY(EditAnywhere)
 	int32 GridRadiusY = 5;
+
+	FIntVector2 GridSize;
 
 	UPROPERTY(EditAnywhere)
 	FVector2D GridTileSize = FVector2D(100.0f);
