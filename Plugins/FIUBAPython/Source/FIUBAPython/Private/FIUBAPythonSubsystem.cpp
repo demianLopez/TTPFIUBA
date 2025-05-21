@@ -106,15 +106,32 @@ int32 UFIUBAPythonSubsystem::InitializeTrain(const TArray<float>& Values, int32 
 		Index++;
 	}
 
+	FFPyObjectPtr Config = PyDict_New();
+
+	FFPyObjectPtr Policy = PyDict_New();
+	PyDict_SetItemString(Policy.Get(), "epsilon", PyLong_FromLong(1.0));
+	PyDict_SetItemString(Policy.Get(), "epsilon_min", PyLong_FromLong(0.01));
+	PyDict_SetItemString(Policy.Get(), "epsilon_decay", PyLong_FromLong(0.995));
+
+	FFPyObjectPtr Agent = PyDict_New();
+	PyDict_SetItemString(Agent.Get(), "gamma", PyLong_FromLong(0.99));
+	PyDict_SetItemString(Agent.Get(), "learning_rate", PyLong_FromLong(0.001));
+	PyDict_SetItemString(Agent.Get(), "batch_size", PyLong_FromLong(32));
+	PyDict_SetItemString(Agent.Get(), "replay_buffer", PyLong_FromLong(10000));
+
+	PyDict_SetItemString(Config.Get(), "policy", Policy.Get());
+	PyDict_SetItemString(Config.Get(), "agent", Agent.Get());
+
+	
 	// Build argument tuple: (agent_id, initial_state, action_state_dim)
 	FFPyObjectPtr py_string = PyUnicode_FromString("UnrealAgent");	
-	FFPyObjectPtr args = Py_BuildValue("(OOi)", py_string.Get(), PyInitialState.Get(), ActionStateDim);
+	FFPyObjectPtr args = Py_BuildValue("(OOiO)", py_string.Get(), PyInitialState.Get(), ActionStateDim, Config.Get());
 	
 	FFPyObjectPtr InitTrainValue = PyObject_CallMethod(FrameworkPythonObject.Get(), "initialize_train", "O", args.Get());
-
+		
 	if (InitTrainValue.IsValid())
 	{
-		return PyLong_AsLong(InitTrainValue.Get());
+		return 0;
 	}
 
 	ensure(false);
@@ -172,10 +189,18 @@ int32 UFIUBAPythonSubsystem::Train(const TArray<float>& Values, const TArray<FFI
 	{
 		if (FinishLoop)
 		{
-			EndCurrentMatch();		
+			EndCurrentMatch();
 		}
-		
-		return PyLong_AsLong(TrainValue.Get());		
+
+		FFPyObjectPtr TakenAction = PyTuple_GetItem(TrainValue.Get(), 0);  // No aumenta la ref
+		FFPyObjectPtr LastAction = PyTuple_GetItem(TrainValue.Get(), 1);  
+
+		if (TakenAction.Get() != Py_None)
+		{
+			return PyLong_AsLong(TakenAction.Get());
+		}
+
+		return 0;
 	}
 
 	ensure(false);
