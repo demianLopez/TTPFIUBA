@@ -26,6 +26,8 @@ public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
+	virtual float GetTimeBetweenRounds() const override { return TimeBetweenRounds;};
+
 protected:
 
 	void InitPython();
@@ -46,7 +48,7 @@ protected:
 	TSharedPtr<class FPythonSubsystemExec> SubsystemExec;
 
 	UFUNCTION(Exec)
-	void ExecuteTraining(int32 NumberOfMatches);
+	void ExecuteTraining(int32 NumberOfMatches, float TimeBetweenRounds);
 
 #if WITH_EDITOR
 	void StartPlayInEditor();
@@ -57,4 +59,5 @@ protected:
 	
 	int32 RemainingTrainings = 0;
 	bool bPerformingAutonomousTraining = false;
+	float TimeBetweenRounds = 0.0f;
 };

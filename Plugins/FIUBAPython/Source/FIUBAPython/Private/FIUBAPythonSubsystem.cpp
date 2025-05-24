@@ -41,10 +41,10 @@ void UFIUBAPythonSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	SubsystemExec = MakeShareable(new FPythonSubsystemExec(this));
 }
 
-void UFIUBAPythonSubsystem::ExecuteTraining(int32 NumberOfMatches)
+void UFIUBAPythonSubsystem::ExecuteTraining(int32 NumberOfMatches, float InTimeBetweenRounds)
 {
+	TimeBetweenRounds = InTimeBetweenRounds;
 	StartAutonomousTraining(NumberOfMatches);
-
 }
 
 bool UFIUBAPythonSubsystem::IsPerformingAutonomousTraining() const
@@ -182,7 +182,7 @@ int32 UFIUBAPythonSubsystem::Train(const TArray<float>& Values, const TArray<FFI
 	FFPyObjectPtr PyFinishLoop = PyBool_FromLong(FinishLoop ? 1 : 0);  // false
 	FFPyObjectPtr PyFinsihTrain = PyBool_FromLong(FinishTrain ? 1 : 0); // false
 	
-	FFPyObjectPtr args = Py_BuildValue("(OOOO)", State.Get(), RewardData.Get(), PyFinishLoop.Get(), PyFinsihTrain.Get());	
+	FFPyObjectPtr args = Py_BuildValue("(OOO)", State.Get(), RewardData.Get(), PyFinishLoop.Get());	
 	FFPyObjectPtr TrainValue = PyObject_CallMethod(FrameworkPythonObject.Get(), "train", "O", args.Get());
 
 	if (TrainValue.IsValid())
