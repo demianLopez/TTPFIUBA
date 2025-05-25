@@ -30,7 +30,7 @@ void AFDLabyrinthGameMode::StartPlay()
 	LabyrinthGrid.AddDefaulted(TotalMapSize);
 
 	MaxTurns = (GridSizeX + GridSizeY) * 1.5;
-	MaxTurns = 100;
+	MaxTurns = 20;
 
 	for (int X = 0; X < GridSizeX; X++)
 	{
@@ -102,8 +102,8 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 	int32 DeltaX = DoorX - PlayerX;
 	int32 DeltaY = DoorY - PlayerY;
 
-	Values.Add(DeltaX >= 0 ? 1 : 0);
-	Values.Add(DeltaY >= 0 ? 1 : 0);
+	Values.Add(DeltaX > 0 ? 1 : 0);
+	Values.Add(DeltaY > 0 ? 1 : 0);
 	Values.Add(DeltaX < 0 ? 1 : 0);
 	Values.Add(DeltaY < 0 ? 1 : 0);
 
@@ -145,13 +145,11 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 	// Mover Down
 	// Mover Right
 	// Mover Left
-	
-	
-	FFIRewardValues MinRewards;
-	FFIRewardValues MaxRewards;
+		
+	float Reward = 0.0f;
 	if (bGameEnded && bWonGame)
 	{
-		MaxRewards.Value += 5.0f;
+		Reward += 5.0f;
 	}
 
 	float DisSquared = FVector::DistSquared(FVector(PlayerX, PlayerY, 0.0f), FVector(DoorX, DoorY, 0.0f));
@@ -162,11 +160,11 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 		bool bIsNear = DisSquared < LastDistSquared;
 		if (bIsNear)
 		{		
-			MaxRewards.Value += 0.1f;
+			Reward += 0.1f;
 		}
 		else
 		{
-			MinRewards.Value += bMoved ? 0.1f : 0.2f;
+			Reward -= bMoved ? 0.1f : 1.0f;
 		}
 	}
 	
@@ -183,14 +181,14 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 	
 	if (bGameEnded && !bWonGame)
 	{
-		MinRewards.Value += 5.0f;
+		Reward -= 5.0f;
 	}
 
-	bool bPositive = MaxRewards.Value > MinRewards.Value;
+	bool bPositive = Reward > 0.0;
 
 	UE_LOG(LogTemp, Warning, TEXT("Reward %s"), bPositive ? TEXT("Positive") : TEXT("Negative"));
 	
-	int32 TakenAction = FIUBAPythonSubsystem.Train(Values, {MaxRewards}, {MinRewards} ,false, bGameEnded);
+	int32 TakenAction = FIUBAPythonSubsystem.Train(Values, Reward ,false, bGameEnded);
 
 	if (bGameEnded)	
 		return;

@@ -17,34 +17,6 @@ void FFIUBAPythonModule::ShutdownModule()
 
 }
 
-PyObject* CallbackDesdePython(PyObject* self, PyObject* args)
-{
-	PyObject* pyObj;
-	const char* mensaje;
-
-	// Extrae los argumentos: (objeto Python, mensaje)
-	if (!PyArg_ParseTuple(args, "Os", &pyObj, &mensaje)) {
-		PyErr_SetString(PyExc_RuntimeError, "Argumentos inválidos");
-		return nullptr;
-	}
-
-	// Obtén el puntero C++ desde el atributo "__cpp_object__"
-	PyObject* cppObjectAttr = PyDict_GetItemString(pyObj, "__cpp_object__");
-	if (!cppObjectAttr || !PyCapsule_CheckExact(cppObjectAttr)) {
-		PyErr_SetString(PyExc_RuntimeError, "No se encontró el puntero al objeto C++");
-		return nullptr;
-	}
-
-	// Convierte el PyCapsule a un puntero C++
-	FFIUBAPythonModule* cppObject = static_cast<FFIUBAPythonModule*>(PyCapsule_GetPointer(cppObjectAttr, "FFIUBAPythonModule"));
-	if (!cppObject) {
-		PyErr_SetString(PyExc_RuntimeError, "El puntero al objeto C++ es inválido");
-		return nullptr;
-	}
-	
-	Py_RETURN_NONE;
-}
-
 void FFIUBAPythonModule::RunTest()
 {
 	Py_Initialize();
@@ -83,7 +55,8 @@ void FFIUBAPythonModule::RunTest()
 
 
 void FFIUBAPythonModule::RunTest2()
-{	
+{
+/*	
 	Py_Initialize();
 	
 	PyRun_SimpleString("import sys");
@@ -148,6 +121,7 @@ void FFIUBAPythonModule::RunTest2()
 	
 
 	Py_Finalize();
+	*/
 }
 
 #undef LOCTEXT_NAMESPACE

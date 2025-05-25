@@ -171,7 +171,7 @@ void AFDGameMode::AdvanceTurn()
 	MinValueDead.Value = 20.0f;
 
 	bool bFinishLoop = Tower->GetCurrentHealth() <= 0.0f;
-	int32 TakenAction = FIUBAPythonSubsystem.Train(Values, { MaxValueCurrentTurn, MaxValueEnemiesKilled }, { MinValueDead } ,false, bFinishLoop);
+	int32 TakenAction = 0 /*FIUBAPythonSubsystem.Train(Values, { MaxValueCurrentTurn, MaxValueEnemiesKilled }, { MinValueDead } ,false, bFinishLoop)*/;
 
 	if (bFinishLoop)
 		return;

@@ -6,6 +6,7 @@
 #include "FIUBAPythonInterface.h"
 #include "Subsystems/EngineSubsystem.h"
 #include "FIUBAPythonTypes.h"
+#include "pytypedefs.h"
 #include "FIUBAPythonSubsystem.generated.h"
 
 /**
@@ -22,7 +23,7 @@ public:
 
 	virtual int32 InitializeTrain(const TArray<float>& Values, int32 ActionStateDim) override;
 
-	virtual int32 Train(const TArray<float>& Values, const TArray<FFIRewardValues>& MaxValues, const TArray<FFIRewardValues>& MinValues, bool FinishTrain, bool FinishLoop) override;
+	virtual int32 Train(const TArray<float>& Values, float Reward, bool FinishTrain, bool FinishLoop) override;
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
@@ -44,6 +45,7 @@ protected:
 	bool bTrainInitialized = false;
 
 	FFPyObjectPtr FrameworkPythonObject;
+	PyMethodDef* callbackDef;
 
 	TSharedPtr<class FPythonSubsystemExec> SubsystemExec;
 

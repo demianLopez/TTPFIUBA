@@ -79,6 +79,19 @@ void UFIUBAPythonSubsystem::EndAutonomousTraining()
 	RemainingTrainings = 0;
 }
 
+PyObject* CallbackDesdePython(PyObject* self, PyObject* args)
+{
+	PyObject* pyObj;
+	const char* mensaje;
+	
+	if (!PyArg_ParseTuple(args, "Os", &pyObj, &mensaje)) {
+		PyErr_SetString(PyExc_RuntimeError, "Argumentos inválidos");
+		return nullptr;
+	}
+	
+	Py_RETURN_NONE;
+}
+
 int32 UFIUBAPythonSubsystem::InitializeTrain(const TArray<float>& Values, int32 ActionStateDim)
 {
 	if (bTrainInitialized)
@@ -87,6 +100,7 @@ int32 UFIUBAPythonSubsystem::InitializeTrain(const TArray<float>& Values, int32 
 	bTrainInitialized = true;
 	
 	InitPython();
+	
 
 	FFPyObjectPtr pModule = PyImport_ImportModule("rl_framework.rl_framework");	
 	FFPyObjectPtr PyObjectDictionary = PyModule_GetDict(pModule.Get());	
@@ -96,6 +110,27 @@ int32 UFIUBAPythonSubsystem::InitializeTrain(const TArray<float>& Values, int32 
 	{
 		FrameworkPythonObject = PyObject_CallObject(python_class.Get(), nullptr);
 	}
+	//
+
+	callbackDef = new PyMethodDef();
+	callbackDef->ml_name = "cpp_callback";
+	callbackDef->ml_meth = CallbackDesdePython;
+	callbackDef->ml_flags = METH_VARARGS;
+	callbackDef->ml_doc = "Callback hacia C++ desde Python";
+	/*PyMethodDef callbackDef = {
+		"cpp_callback",                     // Nombre del método
+		CallbackDesdePython,          // Puntero a la función
+		METH_VARARGS,                      // Indica que acepta argumentos
+		"Callback hacia C++ desde Python"  // Descripción
+	};*/
+
+	PyObject* method = PyCFunction_NewEx(callbackDef, nullptr, nullptr);
+	PyObject* bound_method = PyMethod_New(method, FrameworkPythonObject.Get());
+	
+	PyObject* dict = PyObject_GetAttrString(FrameworkPythonObject.Get(), "__dict__");
+	int32 value = PyDict_SetItemString(dict, "cpp_callback", bound_method);
+
+	///ssss
 
 	// Create Array
 	FFPyObjectPtr PyInitialState = PyList_New(Values.Num());
@@ -138,7 +173,7 @@ int32 UFIUBAPythonSubsystem::InitializeTrain(const TArray<float>& Values, int32 
 	return -1;
 }
 
-int32 UFIUBAPythonSubsystem::Train(const TArray<float>& Values, const TArray<FFIRewardValues>& MaxValues, const TArray<FFIRewardValues>& MinValues, bool FinishTrain, bool FinishLoop)
+int32 UFIUBAPythonSubsystem::Train(const TArray<float>& Values, float Reward, bool FinishTrain, bool FinishLoop)
 {
 	FFPyObjectPtr State = PyList_New(Values.Num());
 
@@ -150,6 +185,7 @@ int32 UFIUBAPythonSubsystem::Train(const TArray<float>& Values, const TArray<FFI
 	}
 
 	// REWARD !!!!
+	/*
 	FFPyObjectPtr RewardData = PyDict_New();
 	
 	FFPyObjectPtr MaxVars = PyList_New(MaxValues.Num());
@@ -176,13 +212,17 @@ int32 UFIUBAPythonSubsystem::Train(const TArray<float>& Values, const TArray<FFI
 	
 	PyDict_SetItemString(RewardData.Get(), "max_vars", MaxVars.Get());
 	PyDict_SetItemString(RewardData.Get(), "min_vars", MinVars.Get());
-	
+	*/
 	// -- REWARD!!!!
+
+
 	
 	FFPyObjectPtr PyFinishLoop = PyBool_FromLong(FinishLoop ? 1 : 0);  // false
 	FFPyObjectPtr PyFinsihTrain = PyBool_FromLong(FinishTrain ? 1 : 0); // false
+
+	FFPyObjectPtr PyReward = PyLong_FromLong(Reward);
 	
-	FFPyObjectPtr args = Py_BuildValue("(OOO)", State.Get(), RewardData.Get(), PyFinishLoop.Get());	
+	FFPyObjectPtr args = Py_BuildValue("(OOO)", State.Get(), PyReward.Get(), PyFinishLoop.Get());	
 	FFPyObjectPtr TrainValue = PyObject_CallMethod(FrameworkPythonObject.Get(), "train", "O", args.Get());
 
 	if (TrainValue.IsValid())
