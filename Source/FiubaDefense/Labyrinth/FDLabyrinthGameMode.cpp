@@ -152,8 +152,9 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 		Reward += 5.0f;
 	}
 
-	float DisSquared = FVector::DistSquared(FVector(PlayerX, PlayerY, 0.0f), FVector(DoorX, DoorY, 0.0f));
+
 	//UE_LOG(LogTemp, Warning, TEXT("LastDist %.2f NewDist %.2f"), LastDistSquared, DisSquared);
+	float DisSquared = FVector::DistSquared(FVector(PlayerX, PlayerY, 0.0f), FVector(DoorX, DoorY, 0.0f));
 
 	if (!FMath::IsNearlyZero(LastDistSquared))
 	{
@@ -186,8 +187,15 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 
 	bool bPositive = Reward > 0.0;
 
-	UE_LOG(LogTemp, Warning, TEXT("Reward %s"), bPositive ? TEXT("Positive") : TEXT("Negative"));
-	
+	//UE_LOG(LogTemp, Warning, TEXT("Reward %s"), bPositive ? TEXT("Positive") : TEXT("Negative"));
+	FString Data("[");
+	for (float Value : Values)
+	{
+		Data += FString::Printf(TEXT(", %.1f"), Value);
+	}
+	Data += "]";
+
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *Data);
 	int32 TakenAction = FIUBAPythonSubsystem.Train(Values, Reward ,false, bGameEnded);
 
 	if (bGameEnded)	
@@ -196,7 +204,7 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 	if (!ensure(IsValid(Player)))
 		return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Action %d"), TakenAction);
+	//UE_LOG(LogTemp, Warning, TEXT("Action %d"), TakenAction);
 
 	int32 MoveX = 0, MoveY = 0;
 	switch (TakenAction)

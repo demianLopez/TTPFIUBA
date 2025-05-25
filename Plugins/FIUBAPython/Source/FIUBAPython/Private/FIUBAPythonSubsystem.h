@@ -9,6 +9,8 @@
 #include "pytypedefs.h"
 #include "FIUBAPythonSubsystem.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(FDPythonLog, Log, All);
+
 /**
  * 
  */

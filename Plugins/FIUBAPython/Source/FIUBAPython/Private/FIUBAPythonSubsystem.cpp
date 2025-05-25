@@ -7,6 +7,8 @@
 #include "UnrealEdGlobals.h"
 #include "Editor/UnrealEdEngine.h"
 
+DEFINE_LOG_CATEGORY(FDPythonLog);
+
 class FPythonSubsystemExec : private FSelfRegisteringExec
 {
 public:
@@ -88,6 +90,9 @@ PyObject* CallbackDesdePython(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "Argumentos inválidos");
 		return nullptr;
 	}
+
+	FString Message(UTF8_TO_TCHAR(mensaje));
+	UE_LOG(FDPythonLog, Warning, TEXT("%s"), *Message);
 	
 	Py_RETURN_NONE;
 }
@@ -144,13 +149,13 @@ int32 UFIUBAPythonSubsystem::InitializeTrain(const TArray<float>& Values, int32 
 	FFPyObjectPtr Config = PyDict_New();
 
 	FFPyObjectPtr Policy = PyDict_New();
-	PyDict_SetItemString(Policy.Get(), "epsilon", PyLong_FromLong(1.0));
-	PyDict_SetItemString(Policy.Get(), "epsilon_min", PyLong_FromLong(0.01));
-	PyDict_SetItemString(Policy.Get(), "epsilon_decay", PyLong_FromLong(0.995));
+	PyDict_SetItemString(Policy.Get(), "epsilon", PyFloat_FromDouble(1.0));
+	PyDict_SetItemString(Policy.Get(), "epsilon_min", PyFloat_FromDouble(0.01));
+	PyDict_SetItemString(Policy.Get(), "epsilon_decay", PyFloat_FromDouble(0.995));
 
 	FFPyObjectPtr Agent = PyDict_New();
-	PyDict_SetItemString(Agent.Get(), "gamma", PyLong_FromLong(0.99));
-	PyDict_SetItemString(Agent.Get(), "learning_rate", PyLong_FromLong(0.001));
+	PyDict_SetItemString(Agent.Get(), "gamma", PyFloat_FromDouble(0.99));
+	PyDict_SetItemString(Agent.Get(), "learning_rate", PyFloat_FromDouble(0.001));
 	PyDict_SetItemString(Agent.Get(), "batch_size", PyLong_FromLong(32));
 	PyDict_SetItemString(Agent.Get(), "replay_buffer", PyLong_FromLong(10000));
 
@@ -220,7 +225,7 @@ int32 UFIUBAPythonSubsystem::Train(const TArray<float>& Values, float Reward, bo
 	FFPyObjectPtr PyFinishLoop = PyBool_FromLong(FinishLoop ? 1 : 0);  // false
 	FFPyObjectPtr PyFinsihTrain = PyBool_FromLong(FinishTrain ? 1 : 0); // false
 
-	FFPyObjectPtr PyReward = PyLong_FromLong(Reward);
+	FFPyObjectPtr PyReward = PyFloat_FromDouble(Reward);
 	
 	FFPyObjectPtr args = Py_BuildValue("(OOO)", State.Get(), PyReward.Get(), PyFinishLoop.Get());	
 	FFPyObjectPtr TrainValue = PyObject_CallMethod(FrameworkPythonObject.Get(), "train", "O", args.Get());
