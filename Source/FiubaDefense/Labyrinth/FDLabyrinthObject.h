@@ -10,7 +10,8 @@ struct FDOVerlapResult
 {
 	bool bGameEnd = false;
 	bool bWonGame = false;
-	float Points = 0.0f;
+	bool bGrabbedTrophy = false;
+	bool bDestroyObject = false;
 };
 
 UCLASS()

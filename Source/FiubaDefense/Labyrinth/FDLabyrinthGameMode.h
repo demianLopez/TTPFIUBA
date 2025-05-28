@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "FDLabyrinthInteractiveObject.h"
 #include "FDLabyrinthGameMode.generated.h"
 
+class AFDLabyrinthInteractiveObject;
 class AFDLabyrinthPlayer;
 class AFDLabyrinthObject;
 
@@ -33,10 +35,10 @@ public:
 protected:
 
 	UPROPERTY(EditAnywhere)
-	int32 GridSizeX = 4;
+	int32 GridSizeX = 7;
 
 	UPROPERTY(EditAnywhere)
-	int32 GridSizeY = 4;
+	int32 GridSizeY = 7;
 
 	UPROPERTY(EditAnywhere)
 	float TileDimension = 100.0f;
@@ -71,6 +73,8 @@ protected:
 	{
 		return Cast<T>(FindObject(T::StaticClass()));
 	}
+
+	AFDLabyrinthInteractiveObject* FindInteractiveObject(EFDLabyrinthInteractiveObjectType Type);
 	
 	AFDLabyrinthObject* FindObject(TSubclassOf<AFDLabyrinthObject> ObjectClass);
 	
@@ -87,5 +91,7 @@ protected:
 	bool bWonGame = false;
 	bool bMoved = false;
 
+	bool bGrabbedTrophy = false;
+	
 	float LastDistSquared = 0.0f;
 };

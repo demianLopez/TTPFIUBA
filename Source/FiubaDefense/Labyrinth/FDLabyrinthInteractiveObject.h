@@ -9,9 +9,9 @@
 UENUM()
 enum class EFDLabyrinthInteractiveObjectType : uint8
 {
-	L_ExitDoor = 1,
-	L_Trap = 2,
-	L_Trophy = 3
+	L_ExitDoor = 2,
+	L_Trap = 3,
+	L_Trophy = 4
 };
 
 /**
@@ -29,6 +29,7 @@ public:
 	virtual void OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result) override;
 	virtual bool CanOverlap(AFDLabyrinthObject* OtherObject) override;
 
+	EFDLabyrinthInteractiveObjectType GetInteractiveObjectType() const { return InteractiveObjectType; }
 protected:
 
 	UPROPERTY(EditDefaultsOnly)

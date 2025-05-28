@@ -29,8 +29,7 @@ void AFDLabyrinthGameMode::StartPlay()
 	int32 TotalMapSize = GridSizeX * GridSizeY;
 	LabyrinthGrid.AddDefaulted(TotalMapSize);
 
-	MaxTurns = (GridSizeX + GridSizeY) * 1.5;
-	MaxTurns = 20;
+	MaxTurns = (GridSizeX + GridSizeY) * 2;
 
 	for (int X = 0; X < GridSizeX; X++)
 	{
@@ -69,7 +68,7 @@ void AFDLabyrinthGameMode::StartPlay()
 	
 	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
 	TArray<float> Values;
-	Values.AddDefaulted(8);
+	Values.AddDefaulted(13);
 	
 	FIUBAPythonSubsystem.InitializeTrain(Values, 4);
 	
@@ -90,7 +89,7 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 	int32 TotalMapSize = GridSizeX * GridSizeY;
 
 	AFDLabyrinthPlayer* Player = FindPlayer();
-	AFDLabyrinthInteractiveObject* Door = FindObject<AFDLabyrinthInteractiveObject>();
+	AFDLabyrinthInteractiveObject* Door = FindInteractiveObject(EFDLabyrinthInteractiveObjectType::L_ExitDoor);
 
 	int32 PlayerX, PlayerY, DoorX, DoorY;
 
@@ -99,18 +98,51 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 	
 	TArray<float> Values;
 
-	int32 DeltaX = DoorX - PlayerX;
-	int32 DeltaY = DoorY - PlayerY;
+	{
+		int32 DeltaX = DoorX - PlayerX;
+		int32 DeltaY = DoorY - PlayerY;
 
-	Values.Add(DeltaX > 0 ? 1 : 0);
-	Values.Add(DeltaY > 0 ? 1 : 0);
-	Values.Add(DeltaX < 0 ? 1 : 0);
-	Values.Add(DeltaY < 0 ? 1 : 0);
+		Values.Add(DeltaX > 0 ? 1 : 0);
+		Values.Add(DeltaY > 0 ? 1 : 0);
+		Values.Add(DeltaX < 0 ? 1 : 0);
+		Values.Add(DeltaY < 0 ? 1 : 0);
 
-	Values.Add(PlayerX == 0 ? 1 : 0);
-	Values.Add(PlayerY == 0 ? 1 : 0);
-	Values.Add(PlayerX == (GridSizeX - 1) ? 1 : 0);
-	Values.Add(PlayerY == (GridSizeY - 1) ? 1 : 0);
+		Values.Add(PlayerX == 0 ? 1 : 0);
+		Values.Add(PlayerY == 0 ? 1 : 0);
+		Values.Add(PlayerX == (GridSizeX - 1) ? 1 : 0);
+		Values.Add(PlayerY == (GridSizeY - 1) ? 1 : 0);
+	}
+
+	{
+		AFDLabyrinthInteractiveObject* Trophy = FindInteractiveObject(EFDLabyrinthInteractiveObjectType::L_Trophy);
+
+		if (IsValid(Trophy))
+		{
+			int32 TrophyX, TrophyY;
+			Trophy->GetGridLocation(TrophyX, TrophyY);
+		
+			int32 DeltaX = TrophyX - PlayerX;
+			int32 DeltaY = TrophyY - PlayerY;
+
+			Values.Add(DeltaX > 0 ? 1 : 0);
+			Values.Add(DeltaY > 0 ? 1 : 0);
+			Values.Add(DeltaX < 0 ? 1 : 0);
+			Values.Add(DeltaY < 0 ? 1 : 0);
+
+			int32 Distance = FMath::Abs(DeltaX) + FMath::Abs(DeltaY);
+			Values.Add(Distance);
+		}
+		else
+		{
+			Values.Add(0);
+			Values.Add(0);
+			Values.Add(0);
+			Values.Add(0);
+
+			Values.Add(0);
+		}
+	}
+	
 	
 	/*
 	for (int X = 0; X < GridSizeX; X++)
@@ -149,53 +181,19 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 	float Reward = 0.0f;
 	if (bGameEnded && bWonGame)
 	{
-		Reward += 5.0f;
-	}
-
-
-	//UE_LOG(LogTemp, Warning, TEXT("LastDist %.2f NewDist %.2f"), LastDistSquared, DisSquared);
-	float DisSquared = FVector::DistSquared(FVector(PlayerX, PlayerY, 0.0f), FVector(DoorX, DoorY, 0.0f));
-
-	if (!FMath::IsNearlyZero(LastDistSquared))
-	{
-		bool bIsNear = DisSquared < LastDistSquared;
-		if (bIsNear)
-		{		
-			Reward += 0.1f;
-		}
-		else
-		{
-			Reward -= bMoved ? 0.1f : 1.0f;
-		}
+		Reward += bGrabbedTrophy ? 12.0f : 5.0f;
 	}
 	
-	LastDistSquared = DisSquared;
-
-	/*if (!bGameEnded)
+	if (!bMoved)
 	{
-		FFIRewardValues PointsMinValues;
-		PointsMinValues.Value = 1.0f;
-
-		MinValues.Add(PointsMinValues);
+		Reward -= 0.1f;
 	}
-	*/
-	
+		
 	if (bGameEnded && !bWonGame)
 	{
 		Reward -= 5.0f;
 	}
-
-	bool bPositive = Reward > 0.0;
-
-	//UE_LOG(LogTemp, Warning, TEXT("Reward %s"), bPositive ? TEXT("Positive") : TEXT("Negative"));
-	FString Data("[");
-	for (float Value : Values)
-	{
-		Data += FString::Printf(TEXT(", %.1f"), Value);
-	}
-	Data += "]";
-
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *Data);
+	
 	int32 TakenAction = FIUBAPythonSubsystem.Train(Values, Reward ,false, bGameEnded);
 
 	if (bGameEnded)	
@@ -254,6 +252,9 @@ bool AFDLabyrinthGameMode::GridTryMoveObject(AFDLabyrinthObject* Object, int32 D
 		return false;
 
 	const TArray<TWeakObjectPtr<AFDLabyrinthObject>>& ObjectsAtDestination = GetObjectsAt(DestX, DestY);
+
+	TArray<TWeakObjectPtr<AFDLabyrinthObject>> PendingDestroy;
+	
 	for(TWeakObjectPtr<AFDLabyrinthObject> DestinationObject : ObjectsAtDestination)
 	{
 		if (!DestinationObject->CanOverlap(Object))
@@ -264,6 +265,18 @@ bool AFDLabyrinthGameMode::GridTryMoveObject(AFDLabyrinthObject* Object, int32 D
 
 		bGameEnded |= OverlapResult.bGameEnd;
 		bWonGame |= OverlapResult.bWonGame;
+		bGrabbedTrophy |= OverlapResult.bGrabbedTrophy;
+
+		if (OverlapResult.bDestroyObject)
+		{
+			PendingDestroy.Add(DestinationObject);
+		}
+	}
+
+	while (!PendingDestroy.IsEmpty())
+	{
+		TWeakObjectPtr<AFDLabyrinthObject> PendingDestroyObject = PendingDestroy.Pop();
+		PendingDestroyObject->Destroy();
 	}
 
 	int32 FromX, FromY;
@@ -368,6 +381,25 @@ AFDLabyrinthObject* AFDLabyrinthGameMode::FindObject(TSubclassOf<AFDLabyrinthObj
 
 		if(Object->IsA(ObjectClass))
 			return Object.Get();
+	}
+
+	return nullptr;
+}
+
+AFDLabyrinthInteractiveObject* AFDLabyrinthGameMode::FindInteractiveObject(EFDLabyrinthInteractiveObjectType Type)
+{
+	for (TWeakObjectPtr<AFDLabyrinthObject> Object : LabyrinthObjects)
+	{
+		if (!Object.IsValid())
+			continue;
+
+		AFDLabyrinthInteractiveObject* InterObject = Cast<AFDLabyrinthInteractiveObject>(Object.Get());
+
+		if (!IsValid(InterObject))
+			continue;
+	
+		if (InterObject->GetInteractiveObjectType() == Type)
+			return InterObject;			
 	}
 
 	return nullptr;

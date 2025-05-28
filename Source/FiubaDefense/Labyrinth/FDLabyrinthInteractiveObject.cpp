@@ -11,6 +11,7 @@ int32 AFDLabyrinthInteractiveObject::GetIdentifier() const
 
 void AFDLabyrinthInteractiveObject::OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result)
 {
+
 	switch (InteractiveObjectType)
 	{
 		case EFDLabyrinthInteractiveObjectType::L_Trap:
@@ -18,14 +19,13 @@ void AFDLabyrinthInteractiveObject::OnOtherObjectTryToOverlap(AFDLabyrinthObject
 			Result.bWonGame = false;
 			break;
 		case EFDLabyrinthInteractiveObjectType::L_Trophy:
-			Result.Points += 100.0f;
+			Result.bGrabbedTrophy = true;
+			Result.bDestroyObject = true;
 			break;
 		case EFDLabyrinthInteractiveObjectType::L_ExitDoor:
 			Result.bGameEnd = true;
 			Result.bWonGame = true;
 	}
-
-	//Destroy();
 }
 
 bool AFDLabyrinthInteractiveObject::CanOverlap(AFDLabyrinthObject* OtherObject)

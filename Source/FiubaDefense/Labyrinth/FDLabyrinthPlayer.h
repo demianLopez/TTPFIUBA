@@ -15,5 +15,5 @@ public:
 	// Sets default values for this actor's properties
 	AFDLabyrinthPlayer();
 	
-	virtual int32 GetIdentifier() const override { return 0; }
+	virtual int32 GetIdentifier() const override { return 1; }
 };
