@@ -91,7 +91,7 @@ void AFDGameMode::StartPlay()
 	// Comprar arma 1
 	// Comprar arma 2
 	
-	FIUBAPythonSubsystem.InitializeTrain(Values, 3);
+	//FIUBAPythonSubsystem.InitializeTrain(Values, 3);
 }
 
 void AFDGameMode::StartMatch()

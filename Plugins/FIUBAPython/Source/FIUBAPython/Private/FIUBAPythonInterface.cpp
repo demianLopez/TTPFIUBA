@@ -8,4 +8,3 @@ IFIUBAPythonInterface& IFIUBAPythonInterface::Get()
 {
 	return UFIUBAPythonSubsystem::Get();
 }
-

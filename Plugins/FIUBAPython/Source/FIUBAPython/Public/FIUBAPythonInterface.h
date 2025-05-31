@@ -11,12 +11,17 @@ struct FFIRewardValues
 	float Value;
 };
 
+class UFPAgent;
+
 class FIUBAPYTHON_API IFIUBAPythonInterface 
 {
 public:
 
 	static IFIUBAPythonInterface& Get();
-	virtual int32 InitializeTrain(const TArray<float>& Values, int32 ActionStateDim) = 0;
-	virtual int32 Train(const TArray<float>& Values, float Reward, bool FinishTrain, bool FinishLoop) = 0;
+
+	virtual UFPAgent* CreateAgent(const FString& AgentName, int32 SateDim, int32 ActionStateDim) = 0;
+	virtual UFPAgent* GetAgent(const FString& AgentName) = 0;
+	virtual void InitEpisode() = 0;
+
 	virtual float GetTimeBetweenRounds() const = 0;
 };

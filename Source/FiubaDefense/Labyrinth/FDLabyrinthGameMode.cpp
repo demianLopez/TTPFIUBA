@@ -7,6 +7,7 @@
 #include "Labyrinth/FDLabyrinthPlayer.h"
 #include "FDLabyrinthObject.h"
 #include "FIUBAPythonInterface.h"
+#include "FPAgent.h"
 
 bool FLabyrinthGridData::IsChannelOccupied(int32 Channel)
 {
@@ -67,16 +68,14 @@ void AFDLabyrinthGameMode::StartPlay()
 	// Mover Left
 	
 	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
-	TArray<float> Values;
-	Values.AddDefaulted(13);
-	
-	FIUBAPythonSubsystem.InitializeTrain(Values, 4);
+	FIUBAPythonSubsystem.InitEpisode();
+	FIUBAPythonSubsystem.CreateAgent("Player", 13, 4);
 	
 	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::AdvanceTurn);
 }
 
 void AFDLabyrinthGameMode::AdvanceTurn()
-{
+{	
 	TurnNumber++;
 
 	if (TurnNumber >= MaxTurns)
@@ -84,10 +83,6 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 		bGameEnded = true;
 	}
 	
-	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
-
-	int32 TotalMapSize = GridSizeX * GridSizeY;
-
 	AFDLabyrinthPlayer* Player = FindPlayer();
 	AFDLabyrinthInteractiveObject* Door = FindInteractiveObject(EFDLabyrinthInteractiveObjectType::L_ExitDoor);
 
@@ -142,42 +137,7 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 			Values.Add(0);
 		}
 	}
-	
-	
-	/*
-	for (int X = 0; X < GridSizeX; X++)
-	{
-		for (int Y = 0; Y < GridSizeY; Y++)
-		{
-			int32 GridIndex = GetGridIndex(X, Y);
-			FLabyrinthGridData& GridData = LabyrinthGrid[GridIndex];
 			
-			for (int Channel = 0; Channel < 2; Channel++)
-			{
-				int32 ChannelOffset = Channel * TotalMapSize;
-				bool bIsChannelOccupied = GridData.IsChannelOccupied(Channel);
-				
-				Values[ChannelOffset + GridIndex] = bIsChannelOccupied ? 1.0f : 0.0f;
-			}
-		}
-	}
-	*/
-	
-	/*
-	for (int32 Index = 0; Index < GridSizeX * GridSizeY; Index++)
-	{
-		TWeakObjectPtr<AFDLabyrinthObject> GridObject = LabyrinthGrid[Index];
-
-		int32 Identifier = GridObject.IsValid() ? GridObject->GetIdentifier() : 0;
-		Values[Index] = Identifier;
-	}*/
-
-	// --- Action ----
-	// Mover Up
-	// Mover Down
-	// Mover Right
-	// Mover Left
-		
 	float Reward = 0.0f;
 	if (bGameEnded && bWonGame)
 	{
@@ -193,17 +153,22 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 	{
 		Reward -= 5.0f;
 	}
-	
-	int32 TakenAction = FIUBAPythonSubsystem.Train(Values, Reward ,false, bGameEnded);
 
-	if (bGameEnded)	
+	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
+	UFPAgent* PlayerAgent = FIUBAPythonSubsystem.GetAgent("Player");	
+	int32 TakenAction = PlayerAgent->Train(Values, Reward, bGameEnded);
+
+	if (bGameEnded)
 		return;
 
 	if (!ensure(IsValid(Player)))
 		return;
-
-	//UE_LOG(LogTemp, Warning, TEXT("Action %d"), TakenAction);
-
+	
+	// --- Action ----
+	// Mover Up
+	// Mover Down
+	// Mover Right
+	// Mover Left
 	int32 MoveX = 0, MoveY = 0;
 	switch (TakenAction)
 	{

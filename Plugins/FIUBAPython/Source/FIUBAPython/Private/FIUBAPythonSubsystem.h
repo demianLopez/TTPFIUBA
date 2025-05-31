@@ -9,7 +9,6 @@
 #include "pytypedefs.h"
 #include "FIUBAPythonSubsystem.generated.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(FDPythonLog, Log, All);
 
 /**
  * 
@@ -22,16 +21,18 @@ class UFIUBAPythonSubsystem : public UEngineSubsystem, public IFIUBAPythonInterf
 public:
 
 	static UFIUBAPythonSubsystem& Get();
-
-	virtual int32 InitializeTrain(const TArray<float>& Values, int32 ActionStateDim) override;
-
-	virtual int32 Train(const TArray<float>& Values, float Reward, bool FinishTrain, bool FinishLoop) override;
+	
+	virtual UFPAgent* CreateAgent(const FString& AgentName, int32 SateDim, int32 ActionStateDim) override;
+	virtual UFPAgent* GetAgent(const FString& AgentName) override;
+	
+	virtual void InitEpisode() override;
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
 	virtual float GetTimeBetweenRounds() const override { return TimeBetweenRounds;};
 
 protected:
+
+	void OnAgentEpisodeFinished();
 
 	void InitPython();
 	void DeinitPython();
@@ -44,7 +45,6 @@ protected:
 	void StartNextMatch();
 	
 	bool bPythonInitialized = false;
-	bool bTrainInitialized = false;
 
 	FFPyObjectPtr FrameworkPythonObject;
 	PyMethodDef* callbackDef;
@@ -64,4 +64,7 @@ protected:
 	int32 RemainingTrainings = 0;
 	bool bPerformingAutonomousTraining = false;
 	float TimeBetweenRounds = 0.0f;
+
+	UPROPERTY(Transient)
+	TMap<FString, TObjectPtr<UFPAgent>> Agents;
 };

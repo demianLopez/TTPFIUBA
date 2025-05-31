@@ -11,9 +11,4 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-
-protected:
-
-	void RunTest();
-	void RunTest2();
 };

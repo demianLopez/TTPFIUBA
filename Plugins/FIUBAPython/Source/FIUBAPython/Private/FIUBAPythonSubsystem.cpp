@@ -1,13 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "FIUBAPythonSubsystem.h"
+
+#include "FPAgent.h"
 #include "IAssetViewport.h"
 #include "LevelEditor.h"
 #include "Python.h"
 #include "UnrealEdGlobals.h"
 #include "Editor/UnrealEdEngine.h"
-
-DEFINE_LOG_CATEGORY(FDPythonLog);
 
 class FPythonSubsystemExec : private FSelfRegisteringExec
 {
@@ -81,179 +81,52 @@ void UFIUBAPythonSubsystem::EndAutonomousTraining()
 	RemainingTrainings = 0;
 }
 
-PyObject* CallbackDesdePython(PyObject* self, PyObject* args)
+UFPAgent* UFIUBAPythonSubsystem::CreateAgent(const FString& AgentName, int32 SateDim, int32 ActionStateDim)
 {
-	PyObject* pyObj;
-	const char* mensaje;
-	
-	if (!PyArg_ParseTuple(args, "Os", &pyObj, &mensaje)) {
-		PyErr_SetString(PyExc_RuntimeError, "Argumentos inválidos");
+	if (!ensure(bPythonInitialized))
+	{
 		return nullptr;
 	}
 
-	FString Message(UTF8_TO_TCHAR(mensaje));
-	UE_LOG(FDPythonLog, Warning, TEXT("%s"), *Message);
+	TObjectPtr<UFPAgent>& Agent = Agents.FindOrAdd(AgentName);
+
+	if (IsValid(Agent))
+	{
+		return Agent.Get();
+	}
+
+	Agent = NewObject<UFPAgent>(this, UFPAgent::StaticClass(), *AgentName, RF_Transient);
+	Agent->InitAgent(AgentName, SateDim, ActionStateDim);
+	Agent->OnEpisodeFinished.AddUObject(this, &ThisClass::OnAgentEpisodeFinished);
 	
-	Py_RETURN_NONE;
+	return Agent.Get();
 }
 
-int32 UFIUBAPythonSubsystem::InitializeTrain(const TArray<float>& Values, int32 ActionStateDim)
+UFPAgent* UFIUBAPythonSubsystem::GetAgent(const FString& AgentName)
 {
-	if (bTrainInitialized)
-		return 0;
-
-	bTrainInitialized = true;
-	
-	InitPython();
-	
-
-	FFPyObjectPtr pModule = PyImport_ImportModule("rl_framework.rl_framework");	
-	FFPyObjectPtr PyObjectDictionary = PyModule_GetDict(pModule.Get());	
-	FFPyObjectPtr python_class = PyDict_GetItemString(PyObjectDictionary.Get(), "RLFramework");
-
-	if (PyCallable_Check(python_class.Get()))
+	if (Agents.Contains(AgentName))
 	{
-		FrameworkPythonObject = PyObject_CallObject(python_class.Get(), nullptr);
-	}
-	//
-
-	callbackDef = new PyMethodDef();
-	callbackDef->ml_name = "cpp_callback";
-	callbackDef->ml_meth = CallbackDesdePython;
-	callbackDef->ml_flags = METH_VARARGS;
-	callbackDef->ml_doc = "Callback hacia C++ desde Python";
-	/*PyMethodDef callbackDef = {
-		"cpp_callback",                     // Nombre del método
-		CallbackDesdePython,          // Puntero a la función
-		METH_VARARGS,                      // Indica que acepta argumentos
-		"Callback hacia C++ desde Python"  // Descripción
-	};*/
-
-	PyObject* method = PyCFunction_NewEx(callbackDef, nullptr, nullptr);
-	PyObject* bound_method = PyMethod_New(method, FrameworkPythonObject.Get());
-	
-	PyObject* dict = PyObject_GetAttrString(FrameworkPythonObject.Get(), "__dict__");
-	int32 value = PyDict_SetItemString(dict, "cpp_callback", bound_method);
-
-	///ssss
-
-	// Create Array
-	FFPyObjectPtr PyInitialState = PyList_New(Values.Num());
-	int Index = 0;
-	for (float Value : Values)
-	{
-		PyList_SetItem(PyInitialState.Get(), Index, PyFloat_FromDouble(Value));
-		Index++;
+		return Agents[AgentName].Get();
 	}
 
-	FFPyObjectPtr Config = PyDict_New();
-
-	FFPyObjectPtr Policy = PyDict_New();
-	PyDict_SetItemString(Policy.Get(), "epsilon", PyFloat_FromDouble(1.0));
-	PyDict_SetItemString(Policy.Get(), "epsilon_min", PyFloat_FromDouble(0.01));
-	PyDict_SetItemString(Policy.Get(), "epsilon_decay", PyFloat_FromDouble(0.995));
-
-	FFPyObjectPtr Agent = PyDict_New();
-	PyDict_SetItemString(Agent.Get(), "gamma", PyFloat_FromDouble(0.99));
-	PyDict_SetItemString(Agent.Get(), "learning_rate", PyFloat_FromDouble(0.001));
-	PyDict_SetItemString(Agent.Get(), "batch_size", PyLong_FromLong(32));
-	PyDict_SetItemString(Agent.Get(), "replay_buffer", PyLong_FromLong(10000));
-
-	PyDict_SetItemString(Config.Get(), "policy", Policy.Get());
-	PyDict_SetItemString(Config.Get(), "agent", Agent.Get());
-
-	
-	// Build argument tuple: (agent_id, initial_state, action_state_dim)
-	FFPyObjectPtr py_string = PyUnicode_FromString("UnrealAgent");	
-	FFPyObjectPtr args = Py_BuildValue("(OOiO)", py_string.Get(), PyInitialState.Get(), ActionStateDim, Config.Get());
-	
-	FFPyObjectPtr InitTrainValue = PyObject_CallMethod(FrameworkPythonObject.Get(), "initialize_train", "O", args.Get());
-		
-	if (InitTrainValue.IsValid())
-	{
-		return 0;
-	}
-
-	ensure(false);
-	return -1;
+	return nullptr;
 }
 
-int32 UFIUBAPythonSubsystem::Train(const TArray<float>& Values, float Reward, bool FinishTrain, bool FinishLoop)
+void UFIUBAPythonSubsystem::InitEpisode()
 {
-	FFPyObjectPtr State = PyList_New(Values.Num());
-
-	int Index = 0;
-	for (float Value : Values)
+	if (!bPythonInitialized)
 	{
-		PyList_SetItem(State.Get(), Index, PyFloat_FromDouble(Value));
-		Index++;
+		InitPython();
 	}
 
-	// REWARD !!!!
-	/*
-	FFPyObjectPtr RewardData = PyDict_New();
-	
-	FFPyObjectPtr MaxVars = PyList_New(MaxValues.Num());
-	if (MaxValues.Num() > 0)
+	TArray<FString> AgentNames;
+	Agents.GetKeys(AgentNames);
+
+	for (const FString& AgentName : AgentNames)
 	{
-		Index = 0;
-		for (FFIRewardValues Value : MaxValues)
-		{
-			PyList_SetItem(MaxVars.Get(), Index, PyLong_FromLong(Value.Value));
-			Index++;
-		}
+		Agents[AgentName]->EpisodeStart();
 	}
-	
-	FFPyObjectPtr MinVars = PyList_New(MinValues.Num());
-	if (MinValues.Num() > 0)
-	{
-		Index = 0;
-		for (FFIRewardValues Value : MinValues)
-		{
-			PyList_SetItem(MinVars.Get(), Index, PyLong_FromLong(Value.Value));
-			Index++;
-		}
-	}
-	
-	PyDict_SetItemString(RewardData.Get(), "max_vars", MaxVars.Get());
-	PyDict_SetItemString(RewardData.Get(), "min_vars", MinVars.Get());
-	*/
-	// -- REWARD!!!!
-
-
-	
-	FFPyObjectPtr PyFinishLoop = PyBool_FromLong(FinishLoop ? 1 : 0);  // false
-	FFPyObjectPtr PyFinsihTrain = PyBool_FromLong(FinishTrain ? 1 : 0); // false
-
-	FFPyObjectPtr PyReward = PyFloat_FromDouble(Reward);
-	
-	FFPyObjectPtr args = Py_BuildValue("(OOO)", State.Get(), PyReward.Get(), PyFinishLoop.Get());	
-	FFPyObjectPtr TrainValue = PyObject_CallMethod(FrameworkPythonObject.Get(), "train", "O", args.Get());
-
-	if (TrainValue.IsValid())
-	{
-		if (FinishLoop)
-		{
-			EndCurrentMatch();
-		}
-
-		FFPyObjectPtr TakenAction = PyTuple_GetItem(TrainValue.Get(), 0);  // No aumenta la ref
-		FFPyObjectPtr LastAction = PyTuple_GetItem(TrainValue.Get(), 1);  
-
-		if (TakenAction.Get() != Py_None)
-		{
-			return PyLong_AsLong(TakenAction.Get());
-		}
-
-		return 0;
-	}
-
-	ensure(false);
-	return -1;
 }
-
-/* initialize_train(self, agent_id, initial_state, action_state_dim: int):
- * */
 
 void UFIUBAPythonSubsystem::InitPython()
 {
@@ -284,6 +157,22 @@ void UFIUBAPythonSubsystem::DeinitPython()
 	FrameworkPythonObject.Clear();
 	
 	Py_Finalize();
+}
+
+void UFIUBAPythonSubsystem::OnAgentEpisodeFinished()
+{
+	TArray<FString> AgentNames;
+	Agents.GetKeys(AgentNames);
+
+	for (const FString& AgentName : AgentNames)
+	{
+		if (!Agents[AgentName]->IsEpisodeFinished())
+		{
+			return;
+		}
+	}
+
+	EndCurrentMatch();
 }
 
 void UFIUBAPythonSubsystem::EndCurrentMatch()
