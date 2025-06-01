@@ -16,4 +16,7 @@ public:
 	AFDLabyrinthPlayer();
 	
 	virtual int32 GetIdentifier() const override { return 1; }
+
+	virtual void OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result) override;
+	virtual bool CanOverlap(AFDLabyrinthObject* OtherObject) override;
 };

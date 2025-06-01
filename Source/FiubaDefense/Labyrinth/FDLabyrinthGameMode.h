@@ -48,7 +48,8 @@ protected:
 
 	int32 GetGridIndex(int32 X, int32 Y);
 	void GetGridCoordinate(int32 Index, int32& OutX, int32& OutY);
-
+	void AppendBorders(AFDLabyrinthObject* Object, TArray<float>& OutBorders);
+	
 	const TArray<TWeakObjectPtr<AFDLabyrinthObject>>& GetLabyrinthObjects(int32 Index);
 	
 	UPROPERTY(EditDefaultsOnly)
@@ -59,7 +60,9 @@ protected:
 	AFDLabyrinthObject* SpawnObjectRandomly(TSubclassOf<AFDLabyrinthObject> ObjectClass, FRandomStream& RandomStream);
 	AFDLabyrinthObject* SpawnObjectAt(TSubclassOf<AFDLabyrinthObject> ObjectClass, int32 X, int32 Y, bool bSpawnAlone = false);
 
+	bool GridTryMoveDeltaObject(AFDLabyrinthObject* Object, int32 DeltaX, int32 DeltaY);
 	bool GridTryMoveObject(AFDLabyrinthObject* Object, int32 DestX, int32 DestY);
+	
 	const TArray<TWeakObjectPtr<AFDLabyrinthObject>>& GetObjectsAt(int32 X, int32 Y);
 	void DrawGrid();
 
@@ -88,10 +91,19 @@ protected:
 	friend class AFDLabyrinthObject;
 
 	bool bGameEnded = false;
-	bool bWonGame = false;
-	bool bMoved = false;
 
-	bool bGrabbedTrophy = false;
+	bool bEndedForPlayer = false;
+	bool bEndedForEnemy = false;
+	bool bEndedForDoor = false;
 	
+	bool bWonGame = false;
+	bool bPlayerKilled = false;
+		
 	float LastDistSquared = 0.0f;
+
+	void GetDeltaFromMovementAction(int32 Action, int32& OutDeltaX, int32& OutDeltaY);
+	void AppendBinaryToFloatArray(int32 Number, int32 NumDigits, TArray<float>& OutArray);
+
+	static int32 TotalEnemyWon;
+	static int32 TotalPlayerWon;
 };

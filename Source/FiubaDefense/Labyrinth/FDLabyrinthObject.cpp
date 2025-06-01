@@ -34,3 +34,33 @@ void AFDLabyrinthObject::Destroyed()
 	
 	Super::Destroyed();
 }
+
+void AFDLabyrinthObject::AppendDirectionToObject(AFDLabyrinthObject* OtherObject, TArray<float>& OutDirection) const
+{
+	int32 FromX, FromY;
+	OtherObject->GetGridLocation(FromX, FromY);
+	
+	int32 DeltaX = LocationX - FromX;
+	int32 DeltaY = LocationY - FromY;
+
+	OutDirection.Add(DeltaX > 0 ? 1 : 0);
+	OutDirection.Add(DeltaY > 0 ? 1 : 0);
+	OutDirection.Add(DeltaX < 0 ? 1 : 0);
+	OutDirection.Add(DeltaY < 0 ? 1 : 0);
+
+	int32 Distance = FMath::Abs(DeltaX) + FMath::Abs(DeltaY);
+
+	if (Distance == 0)
+	{
+		OutDirection.Add(0); OutDirection.Add(0);
+	} else if (Distance == 1)
+	{
+		OutDirection.Add(0); OutDirection.Add(1);
+	} else if (Distance == 2)
+	{
+		OutDirection.Add(1); OutDirection.Add(0);
+	} else
+	{
+		OutDirection.Add(1); OutDirection.Add(1);
+	}	
+}

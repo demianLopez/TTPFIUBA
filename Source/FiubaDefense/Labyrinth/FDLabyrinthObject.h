@@ -10,6 +10,7 @@ struct FDOVerlapResult
 {
 	bool bGameEnd = false;
 	bool bWonGame = false;
+	bool bPlayerKilled = false;
 	bool bGrabbedTrophy = false;
 	bool bDestroyObject = false;
 };
@@ -31,6 +32,8 @@ public:
 	virtual void OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result) { }
 	virtual bool CanOverlap(AFDLabyrinthObject* OtherObject) { return false; }
 	virtual void Destroyed() override;
+	
+	void AppendDirectionToObject(AFDLabyrinthObject* OtherObject, TArray<float>& OutDirection) const;
 protected:
 	int32 LocationX;
 	int32 LocationY;
