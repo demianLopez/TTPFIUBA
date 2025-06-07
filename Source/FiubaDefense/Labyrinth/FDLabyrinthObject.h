@@ -13,6 +13,17 @@ struct FDOVerlapResult
 	bool bPlayerKilled = false;
 	bool bGrabbedTrophy = false;
 	bool bDestroyObject = false;
+	bool bGrabbedKey = false;
+
+	void Clear();
+};
+
+UENUM()
+enum class EFDLaberynthOverlapType : uint8
+{
+	Blocked,
+	Overlapped,
+	Ignored,
 };
 
 UCLASS()
@@ -26,15 +37,18 @@ public:
 
 	void SetGridLocation(int32 InLocationX, int32 InLocationY);
 	void GetGridLocation(int32& OutLocationX, int32& OutLocationY);
-
-	virtual int32 GetIdentifier() const { return -1; }
-
-	virtual void OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result) { }
-	virtual bool CanOverlap(AFDLabyrinthObject* OtherObject) { return false; }
-	virtual void Destroyed() override;
 	
-	void AppendDirectionToObject(AFDLabyrinthObject* OtherObject, TArray<float>& OutDirection) const;
+	virtual void OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result) { }
+	virtual EFDLaberynthOverlapType CanOverlap(AFDLabyrinthObject* OtherObject) { return EFDLaberynthOverlapType::Ignored; }
+	
+	void AppendDirectionToObject(AFDLabyrinthObject* OtherObject, TArray<float>& OutDirection, bool bApppendDistance = true) const;
+
+	void MarkAsDestroyed();
+	void OnCreated();
+	
 protected:
 	int32 LocationX;
 	int32 LocationY;
+
+	bool bIsDestroyed;
 };

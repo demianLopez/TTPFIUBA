@@ -24,4 +24,5 @@ public:
 	virtual void InitEpisode() = 0;
 
 	virtual float GetTimeBetweenRounds() const = 0;
+	virtual bool IsFastRun() const = 0;
 };

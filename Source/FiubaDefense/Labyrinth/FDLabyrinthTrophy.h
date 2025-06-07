@@ -3,17 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "FDLabyrinthInteractiveObject.h"
-#include "FDLabyrinthPlayer.generated.h"
+#include "Labyrinth/FDLabyrinthInteractiveObject.h"
+#include "FDLabyrinthTrophy.generated.h"
 
+/**
+ * 
+ */
 UCLASS()
-class FIUBADEFENSE_API AFDLabyrinthPlayer : public AFDLabyrinthInteractiveObject
+class FIUBADEFENSE_API AFDLabyrinthTrophy : public AFDLabyrinthInteractiveObject
 {
 	GENERATED_BODY()
 	
-public:	
-	// Sets default values for this actor's properties
-	AFDLabyrinthPlayer();
+public:
+	AFDLabyrinthTrophy();
 	
 	virtual void OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result) override;
 	virtual EFDLaberynthOverlapType CanOverlap(AFDLabyrinthObject* OtherObject) override;

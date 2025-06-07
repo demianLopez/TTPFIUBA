@@ -43,10 +43,23 @@ void UFIUBAPythonSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	SubsystemExec = MakeShareable(new FPythonSubsystemExec(this));
 }
 
-void UFIUBAPythonSubsystem::ExecuteTraining(int32 NumberOfMatches, float InTimeBetweenRounds)
+void UFIUBAPythonSubsystem::ExecuteTraining(int32 NumberOfMatches, float InTimeBetweenRounds, int32 RunBetweenTicks)
 {
 	TimeBetweenRounds = InTimeBetweenRounds;
+	RunsTillSlowRun = RunBetweenTicks;
 	StartAutonomousTraining(NumberOfMatches);
+}
+
+void UFIUBAPythonSubsystem::DoFastTraining(int32 NumberOfMatches)
+{
+	if (bPerformingAutonomousTraining)
+		return;
+
+	bFastTraining = true;
+	RemainingTrainings = NumberOfMatches;
+	bPerformingAutonomousTraining = true;
+	
+	StartPlayInEditor();
 }
 
 bool UFIUBAPythonSubsystem::IsPerformingAutonomousTraining() const
@@ -79,6 +92,14 @@ void UFIUBAPythonSubsystem::EndAutonomousTraining()
 	
 	bPerformingAutonomousTraining = false;
 	RemainingTrainings = 0;
+}
+
+bool UFIUBAPythonSubsystem::IsFastRun() const
+{
+	if (RunsTillSlowRun == 0)
+		return false;
+	
+	return (RemainingTrainings % RunsTillSlowRun) != 0;
 }
 
 UFPAgent* UFIUBAPythonSubsystem::CreateAgent(const FString& AgentName, int32 SateDim, int32 ActionStateDim)
@@ -171,7 +192,7 @@ void UFIUBAPythonSubsystem::OnAgentEpisodeFinished()
 			return;
 		}
 	}
-
+	
 	EndCurrentMatch();
 }
 
@@ -179,6 +200,11 @@ void UFIUBAPythonSubsystem::EndCurrentMatch()
 {
 	if (!IsPerformingAutonomousTraining())
 		return;
+
+	if (bFastTraining)
+	{
+		RemainingTrainings--;
+	}
 	
 #if WITH_EDITOR
 	EndPlayInEditor();

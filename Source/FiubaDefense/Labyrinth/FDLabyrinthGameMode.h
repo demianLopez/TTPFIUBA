@@ -14,9 +14,7 @@ class AFDLabyrinthObject;
 struct FLabyrinthGridData
 {
 	TArray<TWeakObjectPtr<AFDLabyrinthObject>> Objects;
-
-	bool IsChannelOccupied(int32 Channel);
-
+	
 	int32 X;
 	int32 Y;
 };
@@ -33,6 +31,9 @@ public:
 	virtual void StartPlay() override;
 
 protected:
+
+	void PlayMultipleMatches();
+	void RestartMatch();
 
 	UPROPERTY(EditAnywhere)
 	int32 GridSizeX = 7;
@@ -64,13 +65,13 @@ protected:
 	bool GridTryMoveObject(AFDLabyrinthObject* Object, int32 DestX, int32 DestY);
 	
 	const TArray<TWeakObjectPtr<AFDLabyrinthObject>>& GetObjectsAt(int32 X, int32 Y);
+	bool ExistObjectAt(int32 X, int32 Y, EFDLabyrinthInteractiveObjectType Type);
+
 	void DrawGrid();
 
 	void AdvanceTurn();
-
-	TWeakObjectPtr<AFDLabyrinthPlayer> CachedPlayer;
-	AFDLabyrinthPlayer* FindPlayer();
-
+	bool Internal_AdvanceTurn();
+	
 	template<class T>
 	T* FindObject()
 	{
@@ -84,21 +85,16 @@ protected:
 	int32 TurnNumber = 0;
 
 	UPROPERTY(EditDefaultsOnly)
-	int32 MaxTurns = 25;
-
-	void ObjectRemoved(AFDLabyrinthObject* Object);
-	
+	int32 MaxTurns = 40;
+		
 	friend class AFDLabyrinthObject;
-
-	bool bGameEnded = false;
-
+	
 	bool bEndedForPlayer = false;
 	bool bEndedForEnemy = false;
 	bool bEndedForDoor = false;
-	
-	bool bWonGame = false;
-	bool bPlayerKilled = false;
-		
+
+	TSharedPtr<struct FDOVerlapResult> GameOverlapResult;
+			
 	float LastDistSquared = 0.0f;
 
 	void GetDeltaFromMovementAction(int32 Action, int32& OutDeltaX, int32& OutDeltaY);
@@ -106,4 +102,13 @@ protected:
 
 	static int32 TotalEnemyWon;
 	static int32 TotalPlayerWon;
+
+	// ---------- Cached
+
+	void DestroyObject(AFDLabyrinthObject* Object);
+	
+	UPROPERTY(Transient)
+	TArray<AFDLabyrinthObject*> CachedObjects;
+
+	AFDLabyrinthObject* FindRecycledObject(UClass* Class);
 };

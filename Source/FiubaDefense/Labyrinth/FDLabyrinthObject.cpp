@@ -5,6 +5,11 @@
 
 #include "FDLabyrinthGameMode.h"
 
+void FDOVerlapResult::Clear()
+{
+	bDestroyObject = false;
+}
+
 AFDLabyrinthObject::AFDLabyrinthObject()
 {
 	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -22,32 +27,29 @@ void AFDLabyrinthObject::GetGridLocation(int32& OutLocationX, int32& OutLocation
 	OutLocationY = LocationY;
 }
 
-void AFDLabyrinthObject::Destroyed()
+void AFDLabyrinthObject::AppendDirectionToObject(AFDLabyrinthObject* OtherObject, TArray<float>& OutDirection, bool bApppendDistance) const
 {
-	UWorld* World = GetWorld();
-
-	if (IsValid(World) && World->IsGameWorld())
+	if (!IsValid(OtherObject) || OtherObject->bIsDestroyed)
 	{
-		AFDLabyrinthGameMode* GameMode = GetWorld()->GetAuthGameMode<AFDLabyrinthGameMode>();
-		GameMode->ObjectRemoved(this);
+		int32 AppendSize = bApppendDistance ? 6 : 4;
+		OutDirection.AddDefaulted(AppendSize);
+		return;
 	}
 	
-	Super::Destroyed();
-}
-
-void AFDLabyrinthObject::AppendDirectionToObject(AFDLabyrinthObject* OtherObject, TArray<float>& OutDirection) const
-{
-	int32 FromX, FromY;
-	OtherObject->GetGridLocation(FromX, FromY);
+	int32 ToX, ToY;
+	OtherObject->GetGridLocation(ToX, ToY);
 	
-	int32 DeltaX = LocationX - FromX;
-	int32 DeltaY = LocationY - FromY;
+	int32 DeltaX = ToX - LocationX;
+	int32 DeltaY = ToY - LocationY;
 
 	OutDirection.Add(DeltaX > 0 ? 1 : 0);
 	OutDirection.Add(DeltaY > 0 ? 1 : 0);
 	OutDirection.Add(DeltaX < 0 ? 1 : 0);
 	OutDirection.Add(DeltaY < 0 ? 1 : 0);
 
+	if (!bApppendDistance)
+		return;
+	
 	int32 Distance = FMath::Abs(DeltaX) + FMath::Abs(DeltaY);
 
 	if (Distance == 0)
@@ -63,4 +65,16 @@ void AFDLabyrinthObject::AppendDirectionToObject(AFDLabyrinthObject* OtherObject
 	{
 		OutDirection.Add(1); OutDirection.Add(1);
 	}	
+}
+
+void AFDLabyrinthObject::MarkAsDestroyed()
+{
+	bIsDestroyed = true;
+	SetActorHiddenInGame(true);
+}
+
+void AFDLabyrinthObject::OnCreated()
+{
+	SetActorHiddenInGame(false);
+	bIsDestroyed = false;
 }

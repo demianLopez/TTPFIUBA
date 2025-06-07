@@ -9,10 +9,15 @@
 UENUM()
 enum class EFDLabyrinthInteractiveObjectType : uint8
 {
+	L_Player = 1,
 	L_ExitDoor = 2,
 	L_Enemy = 3,
-	L_Trophy = 4
+	L_Trophy = 4,
+	L_Trap = 5,
+	L_Key = 6,
 };
+
+
 
 /**
  * 
@@ -23,19 +28,10 @@ class FIUBADEFENSE_API AFDLabyrinthInteractiveObject : public AFDLabyrinthObject
 	GENERATED_BODY()
 
 public:
-
-	virtual int32 GetIdentifier() const override;
-
-	virtual void OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result) override;
-	virtual bool CanOverlap(AFDLabyrinthObject* OtherObject) override;
-
+	
 	EFDLabyrinthInteractiveObjectType GetInteractiveObjectType() const { return InteractiveObjectType; }
 
 protected:
-
-	UPROPERTY(EditDefaultsOnly)
-	EFDLabyrinthInteractiveObjectType InteractiveObjectType;
-
 	
-	
+	EFDLabyrinthInteractiveObjectType InteractiveObjectType;	
 };

@@ -12,28 +12,12 @@
 int32 AFDLabyrinthGameMode::TotalEnemyWon = 0;
 int32 AFDLabyrinthGameMode::TotalPlayerWon = 0;
 
-bool FLabyrinthGridData::IsChannelOccupied(int32 Channel)
-{
-	for (TWeakObjectPtr<AFDLabyrinthObject> Object : Objects)
-	{
-		if (!Object.IsValid())
-			continue;
-
-		if (Channel == Object->GetIdentifier())
-			return true;
-	}
-
-	return false;
-}
-
 void AFDLabyrinthGameMode::StartPlay()
 {
 	Super::StartPlay();
-
+	
 	int32 TotalMapSize = GridSizeX * GridSizeY;
 	LabyrinthGrid.AddDefaulted(TotalMapSize);
-
-	MaxTurns = 30;
 
 	for (int X = 0; X < GridSizeX; X++)
 	{
@@ -47,6 +31,28 @@ void AFDLabyrinthGameMode::StartPlay()
 		}
 	}
 
+	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
+	FIUBAPythonSubsystem.InitEpisode();
+	FIUBAPythonSubsystem.CreateAgent("Player", 24, 5);
+
+	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::PlayMultipleMatches);	
+}
+
+void AFDLabyrinthGameMode::PlayMultipleMatches()
+{
+}
+
+void AFDLabyrinthGameMode::RestartMatch()
+{
+	TArray<TWeakObjectPtr<AFDLabyrinthObject>> Copy = LabyrinthObjects;
+
+	for (auto Object : Copy)
+	{
+		DestroyObject(Object.Get());
+	}
+
+	ensure(LabyrinthObjects.IsEmpty());
+	
 	// Spawn Randoms Objects
 	FRandomStream RandomStream(FMath::Rand32());
 	
@@ -60,28 +66,39 @@ void AFDLabyrinthGameMode::StartPlay()
 
 	DrawGrid();
 
-	
-	// Valores
-	// 100 slots del mapa
-	
-	// --- Action ----
-	// Mover Up
-	// Mover Down
-	// Mover Right
-	// Mover Left
-	
+	GameOverlapResult.Reset();
+	GameOverlapResult = MakeShared<FDOVerlapResult>();
+
 	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
 	FIUBAPythonSubsystem.InitEpisode();
-	FIUBAPythonSubsystem.CreateAgent("Player", 16, 5);
-	FIUBAPythonSubsystem.CreateAgent("Enemy", 16, 5);
-	FIUBAPythonSubsystem.CreateAgent("Door", 18, 5);
-
-	UE_LOG(LogTemp, Warning, TEXT("Games Enemy %d vs %d Player"), TotalEnemyWon, TotalPlayerWon);
-	
-	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::AdvanceTurn);
 }
 
 void AFDLabyrinthGameMode::AdvanceTurn()
+{
+	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
+	bool bAdvanceFast = FIUBAPythonSubsystem.IsFastRun();
+	bool bMatchEnded = false;
+
+	do
+	{
+		bMatchEnded = Internal_AdvanceTurn();
+	}
+	while (!bMatchEnded && bAdvanceFast);
+
+	FTimerHandle Handle;
+	float TimeBetweenRounds = FIUBAPythonSubsystem.GetTimeBetweenRounds();
+	if (FMath::IsNearlyZero(TimeBetweenRounds))
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::AdvanceTurn);
+	}
+	else
+	{
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::AdvanceTurn, TimeBetweenRounds);
+	}
+}
+
+bool AFDLabyrinthGameMode::Internal_AdvanceTurn()
 {
 	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
 
@@ -89,14 +106,14 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 
 	if (TurnNumber >= MaxTurns)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Out Of Movements!"));
-
-		bGameEnded = true;
+		GameOverlapResult->bGameEnd = true;
 	}
 	
-	AFDLabyrinthPlayer* Player = FindPlayer();
+	AFDLabyrinthObject* Player = FindInteractiveObject(EFDLabyrinthInteractiveObjectType::L_Player);
 	AFDLabyrinthObject* Enemy = FindInteractiveObject(EFDLabyrinthInteractiveObjectType::L_Enemy);
 	AFDLabyrinthObject* Door = FindInteractiveObject(EFDLabyrinthInteractiveObjectType::L_ExitDoor);
+	AFDLabyrinthObject* Trophy = FindInteractiveObject(EFDLabyrinthInteractiveObjectType::L_Trophy);
+	AFDLabyrinthObject* Key = FindInteractiveObject(EFDLabyrinthInteractiveObjectType::L_Key);
 
 	if (!bEndedForPlayer)
 	{
@@ -105,24 +122,32 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 			TArray<float> PlayerState;
 			
 			AppendBorders(Player, PlayerState);
-			Enemy->AppendDirectionToObject(Player, PlayerState);
-			Door->AppendDirectionToObject(Player, PlayerState);
+			Player->AppendDirectionToObject(Enemy, PlayerState);
+			Player->AppendDirectionToObject(Door, PlayerState, false);
+			Player->AppendDirectionToObject(Key, PlayerState, false);
+			Player->AppendDirectionToObject(Trophy, PlayerState, false);
+
+			float TrophyValue = GameOverlapResult->bGrabbedTrophy ? 1.0f : 0.0f;
+			float KeyValue = GameOverlapResult->bGrabbedKey ? 1.0f : 0.0f;
 			
+			PlayerState.Add(TrophyValue);
+			PlayerState.Add(KeyValue);
+						
 			float PlayerReward = 0.0f;
-	
-			if (bGameEnded && bWonGame)
+			
+			if (GameOverlapResult->bGameEnd && GameOverlapResult->bWonGame)
 			{
-				PlayerReward += 6.0f;
+				PlayerReward += GameOverlapResult->bGrabbedTrophy ? 10.0f : 2.0f;
 			}
 					
-			if (bGameEnded && !bWonGame)
+			if (GameOverlapResult->bGameEnd && !GameOverlapResult->bWonGame)
 			{
-				PlayerReward -= 6.0f;
+				PlayerReward -= GameOverlapResult->bPlayerKilled ? 4.0f : 2.0f;
 			}
 
 			UFPAgent* PlayerAgent = FIUBAPythonSubsystem.GetAgent("Player");	
-			PlayerAction = PlayerAgent->Train(PlayerState, PlayerReward, bGameEnded);
-			bEndedForPlayer = bGameEnded;
+			PlayerAction = PlayerAgent->Train(PlayerState, PlayerReward, GameOverlapResult->bGameEnd);
+			bEndedForPlayer = GameOverlapResult->bGameEnd;
 		}		
 	
 		if (!bEndedForPlayer)
@@ -134,6 +159,7 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 	}
 	// Enemy! -----------------------
 
+	/*
 	if (!bEndedForEnemy)
 	{
 		int32 EnemyAction = 0;
@@ -141,18 +167,17 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 			TArray<float> EnemyState;
 			AppendBorders(Enemy, EnemyState);
 			Player->AppendDirectionToObject(Enemy, EnemyState);
-			Door->AppendDirectionToObject(Enemy, EnemyState);
 			
 			float EnemyReward = 0.0f;
 
-			if (bGameEnded && bWonGame)
+			if (bGameEnded && !bPlayerKilled)
 			{
 				EnemyReward -= 6.0f;
 			}
 
-			if (bGameEnded && !bWonGame)
+			if (bGameEnded && bPlayerKilled)
 			{
-				EnemyReward += bPlayerKilled ? 10.0f : 1.0f;
+				EnemyReward += 6.0f;
 			}
 
 			UFPAgent* EnemyAgent = FIUBAPythonSubsystem.GetAgent("Enemy");	
@@ -175,7 +200,7 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 			TArray<float> DoorState;
 			AppendBorders(Door, DoorState);
 			Player->AppendDirectionToObject(Door, DoorState);
-			Enemy->AppendDirectionToObject(Player, DoorState);
+			//Enemy->AppendDirectionToObject(Player, DoorState);
 			//AppendBinaryToFloatArray(TurnNumber, 4, DoorState);
 
 			if (TotalEnemyWon > TotalPlayerWon)
@@ -229,32 +254,33 @@ void AFDLabyrinthGameMode::AdvanceTurn()
 			GridTryMoveDeltaObject(Door, DeltaX, DeltaY);
 		}
 	}
+	*/
 	
-	if (bEndedForEnemy && bEndedForPlayer && bEndedForDoor)
-		return;
+	if (bEndedForPlayer /* && bEndedForPlayer && bEndedForDoor */)
+		return true;
 
-	FTimerHandle Handle;
-	float TimeBetweenRounds = FIUBAPythonSubsystem.GetTimeBetweenRounds();
-	if (FMath::IsNearlyZero(TimeBetweenRounds))
-	{
-		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::AdvanceTurn);
-	}
-	else
-	{
-		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::AdvanceTurn, TimeBetweenRounds);
-	}
+	return false;
 }
 
 void AFDLabyrinthGameMode::AppendBorders(AFDLabyrinthObject* Object, TArray<float>& OutBorders)
 {
 	int32 PlayerX, PlayerY;
 	Object->GetGridLocation(PlayerX, PlayerY);
+
+	int32 DirUp = PlayerX + 1;
+	int32 DirDown = PlayerX - 1;
+	int32 DirRight = PlayerY + 1;
+	int32 DirLeft = PlayerY - 1;
 	
-	OutBorders.Add(PlayerX == 0 ? 1 : 0);
-	OutBorders.Add(PlayerY == 0 ? 1 : 0);
-	OutBorders.Add(PlayerX == (GridSizeX - 1) ? 1 : 0);
-	OutBorders.Add(PlayerY == (GridSizeY - 1) ? 1 : 0);	
+	bool bCheckUp = DirUp >= GridSizeX || ExistObjectAt(DirUp, PlayerY, EFDLabyrinthInteractiveObjectType::L_Trap);
+	bool bCheckDown = DirDown < 0 || ExistObjectAt(DirDown, PlayerY, EFDLabyrinthInteractiveObjectType::L_Trap);
+	bool bCheckRight = DirRight >= GridSizeY || ExistObjectAt(PlayerX, DirRight, EFDLabyrinthInteractiveObjectType::L_Trap);
+	bool bCheckLeft = DirLeft < 0 || ExistObjectAt(PlayerX, DirLeft, EFDLabyrinthInteractiveObjectType::L_Trap);
+	
+	OutBorders.Add(bCheckUp ? 1 : 0);
+	OutBorders.Add(bCheckLeft ? 1 : 0);
+	OutBorders.Add(bCheckDown ? 1 : 0);
+	OutBorders.Add(bCheckRight ? 1 : 0);	
 }
 
 bool AFDLabyrinthGameMode::GridTryMoveDeltaObject(AFDLabyrinthObject* Object, int32 DeltaX, int32 DeltaY)
@@ -285,28 +311,28 @@ bool AFDLabyrinthGameMode::GridTryMoveObject(AFDLabyrinthObject* Object, int32 D
 	
 	for(TWeakObjectPtr<AFDLabyrinthObject> DestinationObject : ObjectsAtDestination)
 	{
-		if (!DestinationObject->CanOverlap(Object))
+		EFDLaberynthOverlapType OverlapType = DestinationObject->CanOverlap(Object);
+
+		if (OverlapType == EFDLaberynthOverlapType::Blocked)
 			return false;
 
-		FDOVerlapResult OverlapResult;
-		DestinationObject->OnOtherObjectTryToOverlap(Object, OverlapResult);
-
-		bGameEnded |= OverlapResult.bGameEnd;
-		bWonGame |= OverlapResult.bWonGame;
-		bPlayerKilled |= OverlapResult.bPlayerKilled;
-		
-		if (OverlapResult.bDestroyObject)
+		if (OverlapType == EFDLaberynthOverlapType::Overlapped)
 		{
-			PendingDestroy.Add(DestinationObject);
+			DestinationObject->OnOtherObjectTryToOverlap(Object, *GameOverlapResult.Get());
+				
+			if (GameOverlapResult->bDestroyObject)
+			{
+				PendingDestroy.Add(DestinationObject);
+			}
 		}
 	}
 
 	while (!PendingDestroy.IsEmpty())
 	{
 		TWeakObjectPtr<AFDLabyrinthObject> PendingDestroyObject = PendingDestroy.Pop();
-		PendingDestroyObject->Destroy();
+		DestroyObject(PendingDestroyObject.Get());
 	}
-
+	
 	int32 FromX, FromY;
 	Object->GetGridLocation(FromX, FromY);
 
@@ -320,7 +346,9 @@ bool AFDLabyrinthGameMode::GridTryMoveObject(AFDLabyrinthObject* Object, int32 D
 	const FVector DestLocation = GetTileWorldLocation(DestX, DestY);
 	Object->SetActorLocation(DestLocation);
 	Object->SetGridLocation(DestX, DestY);
-	
+
+	GameOverlapResult->Clear();
+
 	return true;
 }
 
@@ -363,8 +391,12 @@ AFDLabyrinthObject* AFDLabyrinthGameMode::SpawnObjectAt(TSubclassOf<AFDLabyrinth
 		if (!ObjectsAtDestination.IsEmpty())
 			return nullptr;
 	}
-	
-	AFDLabyrinthObject* NewActor = GetWorld()->SpawnActor<AFDLabyrinthObject>(ObjectClass);
+
+	AFDLabyrinthObject* NewActor = FindRecycledObject(ObjectClass);
+	if (!IsValid(NewActor))
+	{
+		NewActor = GetWorld()->SpawnActor<AFDLabyrinthObject>(ObjectClass);
+	}
 
 	const FVector SpawnLocation = GetTileWorldLocation(X, Y);
 	NewActor->SetActorLocation(SpawnLocation);
@@ -433,36 +465,28 @@ AFDLabyrinthInteractiveObject* AFDLabyrinthGameMode::FindInteractiveObject(EFDLa
 	return nullptr;
 }
 
-AFDLabyrinthPlayer* AFDLabyrinthGameMode::FindPlayer()
-{
-	if (CachedPlayer.IsValid())
-	{
-		return CachedPlayer.Get();
-	}
-	
-	CachedPlayer = FindObject<AFDLabyrinthPlayer>();
-
-	if (CachedPlayer.IsValid())
-		return CachedPlayer.Get();
-
-	return nullptr;
-}
-
 const TArray<TWeakObjectPtr<AFDLabyrinthObject>>& AFDLabyrinthGameMode::GetObjectsAt(int32 X, int32 Y)
 {
 	const int32 GridIndex = GetGridIndex(X, Y);
 	return GetLabyrinthObjects(GridIndex);
 }
 
-void AFDLabyrinthGameMode::ObjectRemoved(AFDLabyrinthObject* Object)
+bool AFDLabyrinthGameMode::ExistObjectAt(int32 X, int32 Y, EFDLabyrinthInteractiveObjectType Type)
 {
-	int32 PosX, PosY;
-	Object->GetGridLocation(PosX, PosY);
+	const TArray<TWeakObjectPtr<AFDLabyrinthObject>>& ObjectsAtDestination = GetObjectsAt(X, Y);
 
-	int32 GridIndex = GetGridIndex(PosX, PosY);
-	
-	LabyrinthGrid[GridIndex].Objects.Remove(Object);
-	LabyrinthObjects.Remove(Object);
+	for (TWeakObjectPtr<AFDLabyrinthObject> Object : ObjectsAtDestination)
+	{
+		AFDLabyrinthInteractiveObject* InterObject = Cast<AFDLabyrinthInteractiveObject>(Object.Get());
+
+		if (!IsValid(InterObject))
+			continue;
+
+		if (InterObject->GetInteractiveObjectType() == Type)
+			return true;
+	}
+
+	return false;
 }
 
 void AFDLabyrinthGameMode::GetDeltaFromMovementAction(int32 Action, int32& OutDeltaX, int32& OutDeltaY)
@@ -508,4 +532,38 @@ void AFDLabyrinthGameMode::AppendBinaryToFloatArray(int32 Number, int32 NumDigit
 		int32 Bit = (Number >> i) & 1;
 		OutArray.Add(static_cast<float>(Bit));
 	}
+}
+
+void AFDLabyrinthGameMode::DestroyObject(AFDLabyrinthObject* Object)
+{
+	int32 PosX, PosY;
+	Object->GetGridLocation(PosX, PosY);
+
+	int32 GridIndex = GetGridIndex(PosX, PosY);
+	
+	LabyrinthGrid[GridIndex].Objects.Remove(Object);
+	LabyrinthObjects.Remove(Object);
+
+	CachedObjects.Add(Object);
+	Object->MarkAsDestroyed();
+}
+
+AFDLabyrinthObject* AFDLabyrinthGameMode::FindRecycledObject(UClass* Class)
+{
+	AFDLabyrinthObject* RecycledObject = nullptr;
+	for (auto Object : CachedObjects)
+	{
+		if (Object->IsA(Class))
+		{
+			RecycledObject = Object;
+			break;
+		}
+	}
+
+	if (!IsValid(RecycledObject))
+	{
+		RecycledObject->OnCreated();
+	}
+	
+	return RecycledObject;
 }

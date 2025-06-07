@@ -30,6 +30,8 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual float GetTimeBetweenRounds() const override { return TimeBetweenRounds;};
 
+	virtual bool IsFastRun() const override;
+
 protected:
 
 	void OnAgentEpisodeFinished();
@@ -52,8 +54,11 @@ protected:
 	TSharedPtr<class FPythonSubsystemExec> SubsystemExec;
 
 	UFUNCTION(Exec)
-	void ExecuteTraining(int32 NumberOfMatches, float TimeBetweenRounds);
+	void ExecuteTraining(int32 NumberOfMatches, float TimeBetweenRounds, int32 RunBetweenTicks = 100);
 
+	UFUNCTION(Exec)
+	void DoFastTraining(int32 NumberOfMatches);
+	
 #if WITH_EDITOR
 	void StartPlayInEditor();
 	void EndPlayInEditor();
@@ -64,6 +69,9 @@ protected:
 	int32 RemainingTrainings = 0;
 	bool bPerformingAutonomousTraining = false;
 	float TimeBetweenRounds = 0.0f;
+	int32 RunsTillSlowRun = 0;
+
+	bool bFastTraining = false;
 
 	UPROPERTY(Transient)
 	TMap<FString, TObjectPtr<UFPAgent>> Agents;
