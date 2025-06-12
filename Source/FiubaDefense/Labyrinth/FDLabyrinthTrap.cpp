@@ -3,6 +3,7 @@
 
 #include "Labyrinth/FDLabyrinthTrap.h"
 
+#include "FDLabyrinthEnemy.h"
 #include "FDLabyrinthPlayer.h"
 
 AFDLabyrinthTrap::AFDLabyrinthTrap()
@@ -13,8 +14,9 @@ AFDLabyrinthTrap::AFDLabyrinthTrap()
 EFDLaberynthOverlapType AFDLabyrinthTrap::CanOverlap(AFDLabyrinthObject* OtherObject)
 {
 	AFDLabyrinthPlayer* OtherObjectAsPlayer = Cast<AFDLabyrinthPlayer>(OtherObject);
-
-	if (!IsValid(OtherObjectAsPlayer))
+	AFDLabyrinthEnemy* OtherAsEnemy = Cast<AFDLabyrinthEnemy>(OtherObject);
+	
+	if (!IsValid(OtherObjectAsPlayer) && !IsValid(OtherAsEnemy))
 		return EFDLaberynthOverlapType::Ignored;
 
 	return EFDLaberynthOverlapType::Overlapped;
@@ -22,6 +24,13 @@ EFDLaberynthOverlapType AFDLabyrinthTrap::CanOverlap(AFDLabyrinthObject* OtherOb
 
 void AFDLabyrinthTrap::OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result)
 {
-	Result.bGameEnd = true;
-	Result.bPlayerKilled = true;
+	AFDLabyrinthPlayer* OtherObjectAsPlayer = Cast<AFDLabyrinthPlayer>(Overlap);
+
+	if (IsValid(OtherObjectAsPlayer))
+	{
+		Result.bGameEnd = true;
+		Result.bPlayerKilledByTrap = true;
+	}
+
+	Result.bEnemyCanMove = false;
 }

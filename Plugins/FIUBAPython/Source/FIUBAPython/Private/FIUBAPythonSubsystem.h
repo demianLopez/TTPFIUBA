@@ -26,11 +26,10 @@ public:
 	virtual UFPAgent* GetAgent(const FString& AgentName) override;
 	
 	virtual void InitEpisode() override;
-
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	virtual float GetTimeBetweenRounds() const override { return TimeBetweenRounds;};
 
-	virtual bool IsFastRun() const override;
+	virtual bool IsPerformingAutonomousTraining() const override;
+	virtual bool HasPendingMatch() override;
 
 protected:
 
@@ -38,10 +37,8 @@ protected:
 
 	void InitPython();
 	void DeinitPython();
-
-	void StartAutonomousTraining(int32 NumberOfRounds);
+	
 	void EndAutonomousTraining();
-	bool IsPerformingAutonomousTraining() const;
 
 	void EndCurrentMatch();
 	void StartNextMatch();
@@ -54,24 +51,16 @@ protected:
 	TSharedPtr<class FPythonSubsystemExec> SubsystemExec;
 
 	UFUNCTION(Exec)
-	void ExecuteTraining(int32 NumberOfMatches, float TimeBetweenRounds, int32 RunBetweenTicks = 100);
-
-	UFUNCTION(Exec)
-	void DoFastTraining(int32 NumberOfMatches);
+	void ExecuteTraining(int32 NumberOfMatches);
 	
 #if WITH_EDITOR
 	void StartPlayInEditor();
 	void EndPlayInEditor();
-
 	void OnShutdownPIE(bool bSimulating);
 #endif
 	
 	int32 RemainingTrainings = 0;
 	bool bPerformingAutonomousTraining = false;
-	float TimeBetweenRounds = 0.0f;
-	int32 RunsTillSlowRun = 0;
-
-	bool bFastTraining = false;
 
 	UPROPERTY(Transient)
 	TMap<FString, TObjectPtr<UFPAgent>> Agents;

@@ -22,5 +22,5 @@ EFDLaberynthOverlapType AFDLabyrinthPlayer::CanOverlap(AFDLabyrinthObject* Other
 void AFDLabyrinthPlayer::OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result)
 {
 	Result.bGameEnd = true;
-	Result.bPlayerKilled = true;	
+	Result.bPlayerKilledByEnemy = true;	
 }

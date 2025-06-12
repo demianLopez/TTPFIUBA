@@ -4,10 +4,20 @@
 #include "Labyrinth/FDLabyrinthEnemy.h"
 
 #include "FDLabyrinthPlayer.h"
+#include "FIUBAPythonInterface.h"
 
 AFDLabyrinthEnemy::AFDLabyrinthEnemy()
 {
 	InteractiveObjectType = EFDLabyrinthInteractiveObjectType::L_Enemy;
+}
+
+
+void AFDLabyrinthEnemy::BeginPlay()
+{
+	Super::BeginPlay();
+
+	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
+	FIUBAPythonSubsystem.CreateAgent("Enemy", 8, 5);
 }
 
 EFDLaberynthOverlapType AFDLabyrinthEnemy::CanOverlap(AFDLabyrinthObject* OtherObject)
@@ -23,5 +33,5 @@ EFDLaberynthOverlapType AFDLabyrinthEnemy::CanOverlap(AFDLabyrinthObject* OtherO
 void AFDLabyrinthEnemy::OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result)
 {
 	Result.bGameEnd = true;
-	Result.bPlayerKilled = true;
+	Result.bPlayerKilledByEnemy = true;
 }

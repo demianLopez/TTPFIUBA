@@ -23,6 +23,6 @@ public:
 	virtual UFPAgent* GetAgent(const FString& AgentName) = 0;
 	virtual void InitEpisode() = 0;
 
-	virtual float GetTimeBetweenRounds() const = 0;
-	virtual bool IsFastRun() const = 0;
+	virtual bool HasPendingMatch() = 0;
+	virtual bool IsPerformingAutonomousTraining() const = 0;
 };

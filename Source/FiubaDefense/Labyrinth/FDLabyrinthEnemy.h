@@ -18,6 +18,10 @@ public:
 
 	AFDLabyrinthEnemy();
 
+protected:
+	virtual void BeginPlay() override;
+
+public:
 	virtual void OnOtherObjectTryToOverlap(AFDLabyrinthObject* Overlap, FDOVerlapResult& Result) override;
 	virtual EFDLaberynthOverlapType CanOverlap(AFDLabyrinthObject* OtherObject) override;
 };

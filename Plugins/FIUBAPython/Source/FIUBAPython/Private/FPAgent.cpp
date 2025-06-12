@@ -82,7 +82,7 @@ void UFPAgent::InitAgent(const FString& InAgentName, int32 InStateDim, int32 Act
 	ensure(InitTrainValue.IsValid());
 }
 
-int32 UFPAgent::Train(const TArray<float>& State, float Reward, bool EpisodeFinished)
+int32 UFPAgent::Train(const TArray<float>& State, float Reward, bool bInEpisodeFinished)
 {
 	if (!ensure(!bEpisodeFinished))
 	{
@@ -100,19 +100,21 @@ int32 UFPAgent::Train(const TArray<float>& State, float Reward, bool EpisodeFini
 		Index++;
 	}
 		
-	FFPyObjectPtr PyEpisodeFinished = PyBool_FromLong(EpisodeFinished ? 1 : 0);
+	FFPyObjectPtr PyEpisodeFinished = PyBool_FromLong(bInEpisodeFinished ? 1 : 0);
 
 	FFPyObjectPtr PyReward = PyFloat_FromDouble(Reward);
 	
 	FFPyObjectPtr args = Py_BuildValue("(OOO)", PyState.Get(), PyReward.Get(), PyEpisodeFinished.Get());	
 	FFPyObjectPtr TrainValue = PyObject_CallMethod(Container->PyObjectRef, "train", "O", args.Get());
 
-	bEpisodeFinished = EpisodeFinished;
+	MeanReward += Reward;
+
+	bEpisodeFinished = bInEpisodeFinished;
 	if (TrainValue.IsValid())
 	{
 		if (bEpisodeFinished)
 		{
-			OnEpisodeFinished.Broadcast();
+			EpisodeFinished();
 		}
 
 		FFPyObjectPtr TakenAction = PyTuple_GetItem(TrainValue.Get(), 0);
@@ -130,7 +132,13 @@ int32 UFPAgent::Train(const TArray<float>& State, float Reward, bool EpisodeFini
 	return -1;
 }
 
+void UFPAgent::EpisodeFinished()
+{
+	OnEpisodeFinished.Broadcast();
+}
+
 void UFPAgent::EpisodeStart()
 {
 	bEpisodeFinished = false;
+	MeanReward = 0.0f;
 }

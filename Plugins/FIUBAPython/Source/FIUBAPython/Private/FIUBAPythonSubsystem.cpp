@@ -43,64 +43,6 @@ void UFIUBAPythonSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	SubsystemExec = MakeShareable(new FPythonSubsystemExec(this));
 }
 
-void UFIUBAPythonSubsystem::ExecuteTraining(int32 NumberOfMatches, float InTimeBetweenRounds, int32 RunBetweenTicks)
-{
-	TimeBetweenRounds = InTimeBetweenRounds;
-	RunsTillSlowRun = RunBetweenTicks;
-	StartAutonomousTraining(NumberOfMatches);
-}
-
-void UFIUBAPythonSubsystem::DoFastTraining(int32 NumberOfMatches)
-{
-	if (bPerformingAutonomousTraining)
-		return;
-
-	bFastTraining = true;
-	RemainingTrainings = NumberOfMatches;
-	bPerformingAutonomousTraining = true;
-	
-	StartPlayInEditor();
-}
-
-bool UFIUBAPythonSubsystem::IsPerformingAutonomousTraining() const
-{
-	return bPerformingAutonomousTraining;
-}
-
-void UFIUBAPythonSubsystem::StartAutonomousTraining(int32 NumberOfRounds)
-{
-	if (bPerformingAutonomousTraining)
-		return;
-	
-	RemainingTrainings = NumberOfRounds;
-	bPerformingAutonomousTraining = true;
-	
-#if WITH_EDITOR
-	FEditorDelegates::ShutdownPIE.AddUObject(this, &UFIUBAPythonSubsystem::OnShutdownPIE);
-	StartPlayInEditor();	
-#endif
-}
-
-void UFIUBAPythonSubsystem::EndAutonomousTraining()
-{
-	if (!bPerformingAutonomousTraining)
-		return;
-
-#if WITH_EDITOR
-	FEditorDelegates::ShutdownPIE.RemoveAll(this);
-#endif
-	
-	bPerformingAutonomousTraining = false;
-	RemainingTrainings = 0;
-}
-
-bool UFIUBAPythonSubsystem::IsFastRun() const
-{
-	if (RunsTillSlowRun == 0)
-		return false;
-	
-	return (RemainingTrainings % RunsTillSlowRun) != 0;
-}
 
 UFPAgent* UFIUBAPythonSubsystem::CreateAgent(const FString& AgentName, int32 SateDim, int32 ActionStateDim)
 {
@@ -180,6 +122,24 @@ void UFIUBAPythonSubsystem::DeinitPython()
 	Py_Finalize();
 }
 
+bool UFIUBAPythonSubsystem::IsPerformingAutonomousTraining() const
+{
+	return bPerformingAutonomousTraining;
+}
+
+void UFIUBAPythonSubsystem::ExecuteTraining(int32 NumberOfMatches)
+{
+	if (IsPerformingAutonomousTraining())
+		return;
+	
+	RemainingTrainings = NumberOfMatches;
+	bPerformingAutonomousTraining = true;
+	
+#if WITH_EDITOR
+	StartPlayInEditor();	
+#endif
+}
+
 void UFIUBAPythonSubsystem::OnAgentEpisodeFinished()
 {
 	TArray<FString> AgentNames;
@@ -201,15 +161,39 @@ void UFIUBAPythonSubsystem::EndCurrentMatch()
 	if (!IsPerformingAutonomousTraining())
 		return;
 
-	if (bFastTraining)
+	RemainingTrainings--;
+
+	if (RemainingTrainings <= 0)
 	{
-		RemainingTrainings--;
+		EndAutonomousTraining();
 	}
-	
+}
+
+void UFIUBAPythonSubsystem::EndAutonomousTraining()
+{
+	if (!bPerformingAutonomousTraining)
+		return;
+		
+	RemainingTrainings = 0;
+
 #if WITH_EDITOR
+	FEditorDelegates::ShutdownPIE.AddUObject(this, &UFIUBAPythonSubsystem::OnShutdownPIE);
 	EndPlayInEditor();
 #endif
 }
+
+bool UFIUBAPythonSubsystem::HasPendingMatch()
+{
+	return RemainingTrainings > 0;
+}
+
+#if WITH_EDITOR
+void UFIUBAPythonSubsystem::OnShutdownPIE(bool bSimulating)
+{
+	FEditorDelegates::ShutdownPIE.RemoveAll(this);
+	bPerformingAutonomousTraining = false;
+}
+#endif
 
 void UFIUBAPythonSubsystem::StartNextMatch()
 {
@@ -219,22 +203,6 @@ void UFIUBAPythonSubsystem::StartNextMatch()
 }
 
 #if WITH_EDITOR
-
-void UFIUBAPythonSubsystem::OnShutdownPIE(bool bSimulating)
-{
-	if (!IsPerformingAutonomousTraining())
-		return;
-
-	if (RemainingTrainings <= 0)
-	{
-		EndAutonomousTraining();
-		return;
-	}
-
-	RemainingTrainings--;
-	StartPlayInEditor();
-}
-
 void UFIUBAPythonSubsystem::StartPlayInEditor()
 {
 	FLevelEditorModule& LevelEditorModule = FModuleManager::GetModuleChecked<FLevelEditorModule>(TEXT("LevelEditor"));

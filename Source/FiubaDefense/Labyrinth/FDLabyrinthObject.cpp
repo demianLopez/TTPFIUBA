@@ -8,6 +8,7 @@
 void FDOVerlapResult::Clear()
 {
 	bDestroyObject = false;
+	bEnemyCanMove = true;
 }
 
 AFDLabyrinthObject::AFDLabyrinthObject()
@@ -31,8 +32,12 @@ void AFDLabyrinthObject::AppendDirectionToObject(AFDLabyrinthObject* OtherObject
 {
 	if (!IsValid(OtherObject) || OtherObject->bIsDestroyed)
 	{
-		int32 AppendSize = bApppendDistance ? 6 : 4;
-		OutDirection.AddDefaulted(AppendSize);
+		OutDirection.AddDefaulted(4);
+
+		if (bApppendDistance)
+		{
+			OutDirection.Add(1.0f);
+		}
 		return;
 	}
 	
@@ -50,21 +55,11 @@ void AFDLabyrinthObject::AppendDirectionToObject(AFDLabyrinthObject* OtherObject
 	if (!bApppendDistance)
 		return;
 	
-	int32 Distance = FMath::Abs(DeltaX) + FMath::Abs(DeltaY);
+	int32 Distance = FMath::Abs(DeltaX) + FMath::Abs(DeltaY) - 1;
 
-	if (Distance == 0)
-	{
-		OutDirection.Add(0); OutDirection.Add(0);
-	} else if (Distance == 1)
-	{
-		OutDirection.Add(0); OutDirection.Add(1);
-	} else if (Distance == 2)
-	{
-		OutDirection.Add(1); OutDirection.Add(0);
-	} else
-	{
-		OutDirection.Add(1); OutDirection.Add(1);
-	}	
+	float NormalizedDistance = FMath::Clamp(static_cast<float>(Distance) / 2.0f, 0.0f, 1.0f);
+
+	OutDirection.Add(NormalizedDistance);
 }
 
 void AFDLabyrinthObject::MarkAsDestroyed()

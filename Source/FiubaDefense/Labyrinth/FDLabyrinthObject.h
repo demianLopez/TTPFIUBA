@@ -10,10 +10,12 @@ struct FDOVerlapResult
 {
 	bool bGameEnd = false;
 	bool bWonGame = false;
-	bool bPlayerKilled = false;
+	bool bPlayerKilledByTrap = false;
+	bool bPlayerKilledByEnemy = false;
 	bool bGrabbedTrophy = false;
 	bool bDestroyObject = false;
 	bool bGrabbedKey = false;
+	bool bEnemyCanMove = true;
 
 	void Clear();
 };

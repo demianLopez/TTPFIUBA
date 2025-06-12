@@ -11,6 +11,7 @@
 
 int32 AFDLabyrinthGameMode::TotalEnemyWon = 0;
 int32 AFDLabyrinthGameMode::TotalPlayerWon = 0;
+int32 AFDLabyrinthGameMode::TotalGlobalEpisodes = 0;
 
 void AFDLabyrinthGameMode::StartPlay()
 {
@@ -31,15 +32,42 @@ void AFDLabyrinthGameMode::StartPlay()
 		}
 	}
 
+	DrawGrid();
+	
 	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
 	FIUBAPythonSubsystem.InitEpisode();
 	FIUBAPythonSubsystem.CreateAgent("Player", 24, 5);
 
-	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::PlayMultipleMatches);	
+	bool bIsDoingAutonomousTraining = FIUBAPythonSubsystem.IsPerformingAutonomousTraining();
+	if (bIsDoingAutonomousTraining)
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::PlayMultipleMatches);
+	}
+	else
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::RestartMatch);
+	}
 }
 
 void AFDLabyrinthGameMode::PlayMultipleMatches()
 {
+	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
+
+	int32 RemainingToRest = 100;
+	while (FIUBAPythonSubsystem.HasPendingMatch() && RemainingToRest > 0)
+	{
+		RestartMatch();
+		RemainingToRest--;
+		TotalEpisodes++;
+		TotalGlobalEpisodes++;
+	}
+	
+	UE_LOG(LogTemp, Display, TEXT("Total Episodes: %d"), TotalEpisodes);
+
+	if (FIUBAPythonSubsystem.HasPendingMatch())
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::PlayMultipleMatches);
+	}
 }
 
 void AFDLabyrinthGameMode::RestartMatch()
@@ -50,51 +78,62 @@ void AFDLabyrinthGameMode::RestartMatch()
 	{
 		DestroyObject(Object.Get());
 	}
-
+	
 	ensure(LabyrinthObjects.IsEmpty());
 	
 	// Spawn Randoms Objects
 	FRandomStream RandomStream(FMath::Rand32());
 	
-	for (const TSubclassOf<AFDLabyrinthObject>& ObjectClass : RandomObjects)
+	for (const FMSpawnObjectSettings& ObjectSetting : RandomObjects)
 	{
-		if (!IsValid(ObjectClass))
+		if (ObjectSetting.SpawnAfterMatch > TotalGlobalEpisodes)
 			continue;
 		
-		SpawnObjectRandomly(ObjectClass, RandomStream);
+		if (!IsValid(ObjectSetting.SpawnObjectClass))
+			continue;
+		
+		SpawnObjectRandomly(ObjectSetting.SpawnObjectClass, RandomStream);
 	}
 
-	DrawGrid();
-
+	TurnNumber = 0;
+	
+	bEndedForPlayer = false;
+	bEndedForEnemy = false;
+	bEndedForDoor = false;
+	bEnemyCanMove = false;
+	
 	GameOverlapResult.Reset();
 	GameOverlapResult = MakeShared<FDOVerlapResult>();
 
 	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
 	FIUBAPythonSubsystem.InitEpisode();
+
+	AdvanceTurn();
 }
 
 void AFDLabyrinthGameMode::AdvanceTurn()
 {
 	IFIUBAPythonInterface& FIUBAPythonSubsystem = IFIUBAPythonInterface::Get();
-	bool bAdvanceFast = FIUBAPythonSubsystem.IsFastRun();
-	bool bMatchEnded = false;
+	bool bIsDoingAutonomousTraining = FIUBAPythonSubsystem.IsPerformingAutonomousTraining();
 
+	bool bMatchEnded = false;
 	do
 	{
 		bMatchEnded = Internal_AdvanceTurn();
 	}
-	while (!bMatchEnded && bAdvanceFast);
+	while (!bMatchEnded && bIsDoingAutonomousTraining);
 
-	FTimerHandle Handle;
-	float TimeBetweenRounds = FIUBAPythonSubsystem.GetTimeBetweenRounds();
-	if (FMath::IsNearlyZero(TimeBetweenRounds))
+	if (!bIsDoingAutonomousTraining)
 	{
-		GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::AdvanceTurn);
-	}
-	else
-	{
-		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::AdvanceTurn, TimeBetweenRounds);
+		if (bMatchEnded)
+		{
+			UE_LOG(LogTemp, Display, TEXT("Match Ended"));
+		}
+		else
+		{
+			FTimerHandle TimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::AdvanceTurn, 0.4f);
+		}
 	}
 }
 
@@ -126,6 +165,7 @@ bool AFDLabyrinthGameMode::Internal_AdvanceTurn()
 			Player->AppendDirectionToObject(Door, PlayerState, false);
 			Player->AppendDirectionToObject(Key, PlayerState, false);
 			Player->AppendDirectionToObject(Trophy, PlayerState, false);
+			PlayerState.Add(bEnemyCanMove ? 1.0f : 0.0f);
 
 			float TrophyValue = GameOverlapResult->bGrabbedTrophy ? 1.0f : 0.0f;
 			float KeyValue = GameOverlapResult->bGrabbedKey ? 1.0f : 0.0f;
@@ -134,7 +174,8 @@ bool AFDLabyrinthGameMode::Internal_AdvanceTurn()
 			PlayerState.Add(KeyValue);
 						
 			float PlayerReward = 0.0f;
-			
+
+			bool bPlayerKilled = GameOverlapResult->bPlayerKilledByEnemy || GameOverlapResult->bPlayerKilledByTrap;			
 			if (GameOverlapResult->bGameEnd && GameOverlapResult->bWonGame)
 			{
 				PlayerReward += GameOverlapResult->bGrabbedTrophy ? 10.0f : 2.0f;
@@ -142,7 +183,7 @@ bool AFDLabyrinthGameMode::Internal_AdvanceTurn()
 					
 			if (GameOverlapResult->bGameEnd && !GameOverlapResult->bWonGame)
 			{
-				PlayerReward -= GameOverlapResult->bPlayerKilled ? 4.0f : 2.0f;
+				PlayerReward -= bPlayerKilled ? 4.0f : 2.0f;
 			}
 
 			UFPAgent* PlayerAgent = FIUBAPythonSubsystem.GetAgent("Player");	
@@ -158,41 +199,43 @@ bool AFDLabyrinthGameMode::Internal_AdvanceTurn()
 		}
 	}
 	// Enemy! -----------------------
-
-	/*
-	if (!bEndedForEnemy)
+	
+	if (!bEndedForEnemy && bEnemyCanMove && IsValid(Enemy))
 	{
 		int32 EnemyAction = 0;
 		{
 			TArray<float> EnemyState;
 			AppendBorders(Enemy, EnemyState);
-			Player->AppendDirectionToObject(Enemy, EnemyState);
+			Enemy->AppendDirectionToObject(Player, EnemyState, false);
 			
 			float EnemyReward = 0.0f;
 
-			if (bGameEnded && !bPlayerKilled)
+			if (GameOverlapResult->bGameEnd && !GameOverlapResult->bPlayerKilledByEnemy)
 			{
 				EnemyReward -= 6.0f;
 			}
 
-			if (bGameEnded && bPlayerKilled)
+			if (GameOverlapResult->bGameEnd && GameOverlapResult->bPlayerKilledByEnemy)
 			{
 				EnemyReward += 6.0f;
 			}
 
 			UFPAgent* EnemyAgent = FIUBAPythonSubsystem.GetAgent("Enemy");	
-			EnemyAction = EnemyAgent->Train(EnemyState, EnemyReward, bGameEnded);
-			bEndedForEnemy = bGameEnded;
+			EnemyAction = EnemyAgent->Train(EnemyState, EnemyReward, GameOverlapResult->bGameEnd);
+			bEndedForEnemy = GameOverlapResult->bGameEnd;
 		}
 
 		if (!bEndedForEnemy)
 		{
 			int32 DeltaX = 0, DeltaY = 0;
 			GetDeltaFromMovementAction(EnemyAction, DeltaX, DeltaY);
-			GridTryMoveDeltaObject(Enemy, DeltaX, DeltaY);
+			GridTryMoveDeltaObject(Enemy, DeltaX, DeltaY);			
 		}
 	}
-
+	
+	bEnemyCanMove = !bEnemyCanMove;
+	
+	/*
 	if (!bEndedForDoor)
 	{
 		int32 DoorAction = 0;
@@ -256,7 +299,7 @@ bool AFDLabyrinthGameMode::Internal_AdvanceTurn()
 	}
 	*/
 	
-	if (bEndedForPlayer /* && bEndedForPlayer && bEndedForDoor */)
+	if (bEndedForPlayer && (bEndedForEnemy || !IsValid(Enemy)))
 		return true;
 
 	return false;
@@ -271,16 +314,17 @@ void AFDLabyrinthGameMode::AppendBorders(AFDLabyrinthObject* Object, TArray<floa
 	int32 DirDown = PlayerX - 1;
 	int32 DirRight = PlayerY + 1;
 	int32 DirLeft = PlayerY - 1;
-	
-	bool bCheckUp = DirUp >= GridSizeX || ExistObjectAt(DirUp, PlayerY, EFDLabyrinthInteractiveObjectType::L_Trap);
-	bool bCheckDown = DirDown < 0 || ExistObjectAt(DirDown, PlayerY, EFDLabyrinthInteractiveObjectType::L_Trap);
-	bool bCheckRight = DirRight >= GridSizeY || ExistObjectAt(PlayerX, DirRight, EFDLabyrinthInteractiveObjectType::L_Trap);
-	bool bCheckLeft = DirLeft < 0 || ExistObjectAt(PlayerX, DirLeft, EFDLabyrinthInteractiveObjectType::L_Trap);
-	
-	OutBorders.Add(bCheckUp ? 1 : 0);
-	OutBorders.Add(bCheckLeft ? 1 : 0);
-	OutBorders.Add(bCheckDown ? 1 : 0);
-	OutBorders.Add(bCheckRight ? 1 : 0);	
+
+	auto ExistObjectOrDanger = [this](int32 DirX, int32 DirY)
+	{
+		bool bBlocked = DirX >= GridSizeX || DirY >= GridSizeY || DirX < 0 || DirY < 0;
+		return bBlocked || ExistObjectAt(DirX, DirY, EFDLabyrinthInteractiveObjectType::L_Trap);
+	};
+		
+	OutBorders.Add(ExistObjectOrDanger(DirUp, PlayerY) ? 1 : 0);
+	OutBorders.Add(ExistObjectOrDanger(DirDown, PlayerY) ? 1 : 0);
+	OutBorders.Add(ExistObjectOrDanger(PlayerX, DirRight) ? 1 : 0);
+	OutBorders.Add(ExistObjectOrDanger(PlayerX, DirLeft) ? 1 : 0);
 }
 
 bool AFDLabyrinthGameMode::GridTryMoveDeltaObject(AFDLabyrinthObject* Object, int32 DeltaX, int32 DeltaY)
@@ -318,12 +362,15 @@ bool AFDLabyrinthGameMode::GridTryMoveObject(AFDLabyrinthObject* Object, int32 D
 
 		if (OverlapType == EFDLaberynthOverlapType::Overlapped)
 		{
+			GameOverlapResult->Clear();
 			DestinationObject->OnOtherObjectTryToOverlap(Object, *GameOverlapResult.Get());
 				
 			if (GameOverlapResult->bDestroyObject)
 			{
 				PendingDestroy.Add(DestinationObject);
 			}
+
+			bEnemyCanMove = bEnemyCanMove && GameOverlapResult->bEnemyCanMove;
 		}
 	}
 
@@ -346,9 +393,7 @@ bool AFDLabyrinthGameMode::GridTryMoveObject(AFDLabyrinthObject* Object, int32 D
 	const FVector DestLocation = GetTileWorldLocation(DestX, DestY);
 	Object->SetActorLocation(DestLocation);
 	Object->SetGridLocation(DestX, DestY);
-
-	GameOverlapResult->Clear();
-
+	
 	return true;
 }
 
@@ -560,9 +605,10 @@ AFDLabyrinthObject* AFDLabyrinthGameMode::FindRecycledObject(UClass* Class)
 		}
 	}
 
-	if (!IsValid(RecycledObject))
+	if (IsValid(RecycledObject))
 	{
 		RecycledObject->OnCreated();
+		CachedObjects.Remove(RecycledObject);
 	}
 	
 	return RecycledObject;

@@ -23,12 +23,13 @@ public:
 	DECLARE_MULTICAST_DELEGATE(FAgentDelegate);
 	FAgentDelegate OnEpisodeFinished;
 	
-	int32 Train(const TArray<float>& State, float Reward, bool EpisodeFinished);
+	int32 Train(const TArray<float>& State, float Reward, bool bInEpisodeFinished);
 
 	bool IsEpisodeFinished() const { return bEpisodeFinished; }
 protected:
 
 	void EpisodeStart();
+	void EpisodeFinished();
 	
 	void InitAgent(const FString& AgentName, int32 SateDim, int32 ActionStateDim);
 
@@ -42,5 +43,7 @@ protected:
 	bool bTrainInitialized = false;
 	int32 StateDim = 0;
 
-	bool bEpisodeFinished = false;;
+	bool bEpisodeFinished = false;
+
+	float MeanReward = 0;
 };

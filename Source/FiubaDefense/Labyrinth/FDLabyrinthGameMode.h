@@ -19,6 +19,18 @@ struct FLabyrinthGridData
 	int32 Y;
 };
 
+USTRUCT()
+struct FMSpawnObjectSettings
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AFDLabyrinthObject> SpawnObjectClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	int32 SpawnAfterMatch = 0;
+};
+
 /**
  * 
  */
@@ -54,7 +66,7 @@ protected:
 	const TArray<TWeakObjectPtr<AFDLabyrinthObject>>& GetLabyrinthObjects(int32 Index);
 	
 	UPROPERTY(EditDefaultsOnly)
-	TArray<TSubclassOf<AFDLabyrinthObject>> RandomObjects;
+	TArray<FMSpawnObjectSettings> RandomObjects;
 
 	FVector GetTileWorldLocation(int32 X, int32 Y);
 
@@ -93,10 +105,10 @@ protected:
 	bool bEndedForEnemy = false;
 	bool bEndedForDoor = false;
 
-	TSharedPtr<struct FDOVerlapResult> GameOverlapResult;
-			
-	float LastDistSquared = 0.0f;
+	bool bEnemyCanMove = false;
 
+	TSharedPtr<struct FDOVerlapResult> GameOverlapResult;
+	
 	void GetDeltaFromMovementAction(int32 Action, int32& OutDeltaX, int32& OutDeltaY);
 	void AppendBinaryToFloatArray(int32 Number, int32 NumDigits, TArray<float>& OutArray);
 
@@ -111,4 +123,9 @@ protected:
 	TArray<AFDLabyrinthObject*> CachedObjects;
 
 	AFDLabyrinthObject* FindRecycledObject(UClass* Class);
+
+	//
+
+	int32 TotalEpisodes = 0;
+	static int32 TotalGlobalEpisodes;
 };
